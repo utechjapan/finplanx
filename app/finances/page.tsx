@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import DashboardLayout from '@/src/components/layout/DashboardLayout';
-import { Button } from '@/src/components/ui/Button';
-import { Card, CardContent } from '@/src/components/ui/Card';
 import dynamic from 'next/dynamic';
+// 相対パスを使用して明示的にインポート
+import DashboardLayout from '../../src/components/layout/DashboardLayout';
+import { Button } from '../../src/components/ui/Button';
+import { Card, CardContent } from '../../src/components/ui/Card';
 
 // 収支計画コンポーネントを動的にインポート
 const FinancialForecastCompact = dynamic(() => 
-  import('@/src/components/finance/FinancialForecastCompact'), { ssr: false }
+  import('../../src/components/finance/FinancialForecastCompact'), { ssr: false }
 );
 
 const MonthlyCashFlow = dynamic(() => 
-  import('@/src/components/finance/MonthlyCashFlow'), { ssr: false }
+  import('../../src/components/finance/MonthlyCashFlow'), { ssr: false }
 );
 
 export default function FinancesPage() {

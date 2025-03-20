@@ -345,3 +345,8 @@ const FinancialForecastCompact = () => {
           </div>
         </>
       )}
+    </div>
+  );
+};
+
+export default FinancialForecastCompact;

@@ -1,4 +1,3 @@
-// app/dashboard/page.tsx
 'use client';
 
 import React from 'react';
@@ -17,8 +16,9 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import DashboardLayout from '@/src/components/layout/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
+// 相対パスを使用して明示的にインポート
+import DashboardLayout from '../../src/components/layout/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '../../src/components/ui/Card';
 
 // サンプルデータ
 const monthlyData = [
@@ -57,6 +57,9 @@ const DashboardPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
+              <CardTitle>今月の収入</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="text-3xl font-bold">¥320,000</div>
               <p className="text-sm text-gray-500 mt-2">前月比: +6.7%</p>
             </CardContent>
@@ -206,6 +209,4 @@ const DashboardPage = () => {
   );
 };
 
-export default DashboardPage;<CardTitle>今月の収入</CardTitle>
-            </CardHeader>
-            <CardContent></CardContent>
+export default DashboardPage;
