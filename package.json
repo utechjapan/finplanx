@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
-"dependencies": {
+  "dependencies": {
     "@headlessui/react": "^2.0.0",
     "@hookform/resolvers": "^3.3.2",
     "@next-auth/prisma-adapter": "^1.0.7",
@@ -30,19 +30,19 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^2.1.4",
-    "@tailwindcss/forms": "^0.5.7",
-    "@tailwindcss/typography": "^0.5.10",
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/bcrypt": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.38",
     "@types/react-dom": "^18.2.17",
-    "autoprefixer": "^10.4.16",
+    "autoprefixer": "^10.4.21",
     "eslint": "^8.54.0",
     "eslint-config-next": "14.0.3",
-    "postcss": "^8.4.31",
+    "postcss": "^8.5.3",
     "prisma": "^5.7.0",
-    "tailwindcss": "^3.3.5",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.3.2"
   }
 }
