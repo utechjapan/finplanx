@@ -27,19 +27,19 @@ const DebtRepaymentPlan = () => {
   
   const totalDebt = debtData.reduce((sum, debt) => sum + debt.amount, 0);
   
-  // 金利計算
-  const calculateMonthlyPayment = (totalAmount, annualRate, years) => {
-    const monthlyRate = annualRate / 100 / 12;
-    const numPayments = years * 12;
-    
-    if (monthlyRate === 0) {
-      return totalAmount / numPayments;
-    }
-    
-    const x = Math.pow(1 + monthlyRate, numPayments);
-    return totalAmount * monthlyRate * x / (x - 1);
-  };
+// 金利計算
+const calculateMonthlyPayment = (totalAmount: number, annualRate: number, years: number): number => {
+  const monthlyRate = annualRate / 100 / 12;
+  const numPayments = years * 12;
   
+  if (monthlyRate === 0) {
+    return totalAmount / numPayments;
+  }
+  
+  const x = Math.pow(1 + monthlyRate, numPayments);
+  return totalAmount * monthlyRate * x / (x - 1);
+};
+
   const monthlyPayment = Math.ceil(calculateMonthlyPayment(totalDebt, interestRate, repaymentYears));
   
   // 返済シミュレーション
