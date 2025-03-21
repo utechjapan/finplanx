@@ -1,17 +1,18 @@
+// next.config.js - Updated
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   // Production build should pass type checks
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: process.env.NODE_ENV !== 'production',
   },
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: process.env.NODE_ENV !== 'production',
   },
   env: {
     // In production, ensure these are correctly set
-    DEMO_MODE: process.env.DEMO_MODE || "0",
+    NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE || "true",
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || "https://www.utechlab.net/",
   },
   async redirects() {

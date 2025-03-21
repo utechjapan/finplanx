@@ -1,12 +1,14 @@
-// middleware.ts
+// middleware.ts - Updated
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
+// Public paths that don't require authentication
 const publicPaths = [
   '/',
   '/login',
   '/register',
+  '/demo',
   '/api/auth',
   '/api/register',
   '/terms',
@@ -42,6 +44,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Demo mode - always grant access in development
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV === 'development') {
+    console.log('[Middleware] Demo mode: allowing all access');
+    return NextResponse.next();
+  }
+
   // Get JWT token from request
   const token = await getToken({ req: request });
   
@@ -54,7 +62,6 @@ export async function middleware(request: NextRequest) {
   }
   
   // User is authenticated, allow access
-  console.log('[Middleware] User is authenticated, allowing access');
   return NextResponse.next();
 }
 

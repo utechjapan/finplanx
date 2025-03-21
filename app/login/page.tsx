@@ -1,4 +1,3 @@
-// app/login/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -25,13 +24,15 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-  const error = searchParams.get('error');
-  
+  const initialError = searchParams.get('error')
+    ? 'ログインに失敗しました。メールアドレスとパスワードを確認してください。'
+    : null;
+
   const [isLoading, setIsLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
-  const [authError, setAuthError] = useState<string | null>(error ? 'ログインに失敗しました。メールアドレスとパスワードを確認してください。' : null);
-  
-  // Reset error when user changes input
+  const [authError, setAuthError] = useState<string | null>(initialError);
+
+  // Reset error when input changes
   useEffect(() => {
     if (authError) {
       const timer = setTimeout(() => {
@@ -40,45 +41,61 @@ export default function LoginPage() {
       return () => clearTimeout(timer);
     }
   }, [authError]);
-  
+
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
-    }
+    },
   });
-  
+
   const onSubmit = async (data: LoginFormData) => {
     setAuthError(null);
     setIsLoading(true);
-    
+
     try {
+      // Special case for demo login
+      if (data.email === 'demo@example.com') {
+        const result = await signIn('credentials', {
+          redirect: false,
+          email: data.email,
+          password: 'password123', // Demo password
+        });
+
+        if (result?.error) {
+          setAuthError('デモログインに失敗しました。しばらくしてからもう一度お試しください。');
+          setIsLoading(false);
+        } else {
+          router.push(callbackUrl);
+        }
+        return;
+      }
+
+      // Regular credentials login
       const result = await signIn('credentials', {
         redirect: false,
         email: data.email,
         password: data.password,
       });
-      
+
       if (result?.error) {
         setAuthError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
         setIsLoading(false);
       } else {
-        // Successful login
         router.push(callbackUrl);
       }
     } catch (error) {
+      console.error('Login error:', error);
       setAuthError('ログイン処理中にエラーが発生しました');
       setIsLoading(false);
-      console.error('Login error:', error);
     }
   };
 
-  // Handle social login
   const handleSocialLogin = async (provider: string) => {
     setSocialLoading(provider);
     try {
-      await signIn(provider, { 
+      await signIn(provider, {
         callbackUrl: '/dashboard',
       });
     } catch (error) {
@@ -87,15 +104,11 @@ export default function LoginPage() {
       setSocialLoading(null);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center justify-between mb-8">
             <Link href="/" className="flex items-center space-x-2">
               <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -113,7 +126,7 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent className="pt-6">
               {authError && (
-                <motion.div 
+                <motion.div
                   className="mb-4 p-3 rounded bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-300 text-sm border border-red-200 dark:border-red-800"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -128,7 +141,7 @@ export default function LoginPage() {
                   </div>
                 </motion.div>
               )}
-              
+
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -146,7 +159,7 @@ export default function LoginPage() {
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     パスワード
@@ -163,7 +176,7 @@ export default function LoginPage() {
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
                   )}
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <input
@@ -176,14 +189,13 @@ export default function LoginPage() {
                       ログイン状態を保持
                     </label>
                   </div>
-                  
                   <div className="text-sm">
                     <Link href="/forgot-password" className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
                       パスワードをお忘れですか？
                     </Link>
                   </div>
                 </div>
-                
+
                 <Button
                   type="submit"
                   className="w-full flex justify-center items-center"
@@ -199,7 +211,7 @@ export default function LoginPage() {
                     </>
                   ) : 'ログイン'}
                 </Button>
-                
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
@@ -234,7 +246,7 @@ export default function LoginPage() {
                       </>
                     )}
                   </Button>
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -260,7 +272,7 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </div>
-                
+
                 <div className="text-center mt-4">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     アカウントをお持ちでない方は{' '}

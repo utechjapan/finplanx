@@ -31,7 +31,7 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
-  
+
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -39,14 +39,14 @@ export default function RegisterPage() {
       email: '',
       password: '',
       confirmPassword: '',
-    }
+    },
   });
-  
+
   const onSubmit = async (data: RegisterFormData) => {
     setError(null);
     setSuccess(null);
     setIsLoading(true);
-    
+
     try {
       // Registration API call
       const response = await fetch('/api/register', {
@@ -60,24 +60,34 @@ export default function RegisterPage() {
           password: data.password,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         setError(result.error || '登録処理中にエラーが発生しました');
         setIsLoading(false);
         return;
       }
-      
+
       // Registration successful
       setSuccess(
         result.message ||
         'アカウントが作成されました！確認メールを送信しました。メールボックスを確認してください。'
       );
-      
-      // Do not auto-login after registration - require email verification instead.
+
+      // If demo mode is enabled, auto-login after registration
+      if (result.demoMode) {
+        setTimeout(() => {
+          signIn('credentials', {
+            email: data.email,
+            password: data.password,
+            callbackUrl: '/dashboard',
+            redirect: true,
+          });
+        }, 2000);
+      }
+
       setIsLoading(false);
-      
     } catch (error) {
       console.error('Registration error:', error);
       setError('サーバーエラーが発生しました。しばらくしてからもう一度お試しください。');
@@ -85,11 +95,10 @@ export default function RegisterPage() {
     }
   };
 
-  // Handle social login
   const handleSocialLogin = async (provider: string) => {
     setSocialLoading(provider);
     try {
-      await signIn(provider, { 
+      await signIn(provider, {
         callbackUrl: '/dashboard',
       });
     } catch (error) {
@@ -98,31 +107,23 @@ export default function RegisterPage() {
       setSocialLoading(null);
     }
   };
-  
-  // Skip registration form and go straight to demo
+
   const goToDemo = async () => {
     setIsLoading(true);
-    
     try {
-      // Show feedback message
       setSuccess('デモアカウントにログインしています...');
-      
-      // Short delay for user experience
       await new Promise(resolve => setTimeout(resolve, 800));
-      
       const result = await signIn('credentials', {
         redirect: false,
         email: 'demo@example.com',
         password: 'password123',
       });
-      
       if (result?.error) {
         console.error('Demo login error:', result.error);
         setError('デモログインに失敗しました。しばらくしてからもう一度お試しください。');
         setIsLoading(false);
         setSuccess(null);
       } else {
-        // Successful login - force redirect to dashboard
         window.location.href = '/dashboard';
       }
     } catch (error) {
@@ -132,15 +133,11 @@ export default function RegisterPage() {
       setSuccess(null);
     }
   };
-  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center justify-between mb-8">
             <Link href="/" className="flex items-center space-x-2">
               <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center">
@@ -158,7 +155,7 @@ export default function RegisterPage() {
             </CardHeader>
             <CardContent className="pt-6">
               {error && (
-                <motion.div 
+                <motion.div
                   className="mb-4 p-3 rounded bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-300 text-sm border border-red-200 dark:border-red-800"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -172,9 +169,9 @@ export default function RegisterPage() {
                   </div>
                 </motion.div>
               )}
-              
+
               {success && (
-                <motion.div 
+                <motion.div
                   className="mb-4 p-3 rounded bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-300 text-sm border border-green-200 dark:border-green-800"
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -188,7 +185,7 @@ export default function RegisterPage() {
                   </div>
                 </motion.div>
               )}
-              
+
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -206,7 +203,7 @@ export default function RegisterPage() {
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.name.message}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     メールアドレス
@@ -223,7 +220,7 @@ export default function RegisterPage() {
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email.message}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     パスワード
@@ -240,7 +237,7 @@ export default function RegisterPage() {
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password.message}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     パスワード（確認）
@@ -257,7 +254,7 @@ export default function RegisterPage() {
                     <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.confirmPassword.message}</p>
                   )}
                 </div>
-                
+
                 <div className="flex items-start mt-4">
                   <div className="flex items-center h-5">
                     <input
@@ -283,7 +280,7 @@ export default function RegisterPage() {
                     </label>
                   </div>
                 </div>
-                
+
                 <Button
                   type="submit"
                   className="w-full flex justify-center items-center mt-6"
@@ -299,16 +296,16 @@ export default function RegisterPage() {
                     </>
                   ) : '登録する'}
                 </Button>
-                
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500 dark:bg-gray-800 dark:text-gray-400">SNSで登録</span>
+                    <span className="px-2 bg-white text-gray-500 dark:bg-gray-800 dark:text-gray-400">または</span>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3">
                   <Button
                     type="button"
@@ -334,7 +331,7 @@ export default function RegisterPage() {
                       </>
                     )}
                   </Button>
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -360,7 +357,7 @@ export default function RegisterPage() {
                     )}
                   </Button>
                 </div>
-                
+
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
@@ -369,7 +366,7 @@ export default function RegisterPage() {
                     <span className="px-2 bg-white text-gray-500 dark:bg-gray-800 dark:text-gray-400">または</span>
                   </div>
                 </div>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -379,7 +376,7 @@ export default function RegisterPage() {
                 >
                   登録せずにデモを試す
                 </Button>
-                
+
                 <div className="text-center mt-4">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     すでにアカウントをお持ちですか？{' '}
