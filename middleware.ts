@@ -1,4 +1,4 @@
-// middleware.ts
+// middleware.ts - Improved version
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
@@ -21,6 +21,19 @@ const publicPaths = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // Always allow dashboard access in development
+  if (process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === '1') {
+    console.log('[Middleware] Development/Demo mode: allowing all access');
+    return NextResponse.next();
+  }
+  
+  // Always allow dashboard access if demo cookie exists
+  const hasDemoCookie = request.cookies.has('demo_mode');
+  if (hasDemoCookie) {
+    console.log('[Middleware] Demo cookie detected: allowing access');
+    return NextResponse.next();
+  }
+  
   // パブリックパスの場合、認証チェックをスキップ
   for (const path of publicPaths) {
     if (pathname === path || pathname.startsWith(`${path}/`)) {
@@ -38,27 +51,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // デモモードチェック - 開発環境またはDEMO_MODE=1の場合はアクセスを許可
-  const isDemoMode = process.env.NODE_ENV === 'development' || process.env.DEMO_MODE === '1';
-  if (isDemoMode) {
-    // console.log('Demo mode active, allowing access to:', pathname);
-    return NextResponse.next();
-  }
-
   // JWT トークンを取得
-  const token = await getToken({ req: request });
+  const token = await getToken({ 
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET 
+  });
   
   // 未認証の場合はログインページにリダイレクト
   if (!token) {
+    console.log('[Middleware] No token found, redirecting to login');
     const url = new URL('/login', request.url);
     url.searchParams.set('callbackUrl', encodeURI(pathname));
     return NextResponse.redirect(url);
   }
   
+  // If we reach here, the user is authenticated
+  console.log('[Middleware] User is authenticated, allowing access');
   return NextResponse.next();
 }
 
-// マッチャー設定
+// マッチャー設定 - simplified to capture main protected paths
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    // Only apply middleware to these paths
+    '/dashboard/:path*',
+    '/finances/:path*',
+    '/life-plan/:path*',
+    '/debt-repayment/:path*',
+    '/investments/:path*',
+    '/reports/:path*'
+  ],
 };

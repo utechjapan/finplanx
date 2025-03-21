@@ -1,4 +1,4 @@
-// src/components/ui/ThemeToggle.tsx
+// src/components/ui/ThemeToggle.tsx - Fixed
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,8 +7,12 @@ import { Button } from './Button';
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [mounted, setMounted] = useState(false);
 
+  // Only run this code on the client side
   useEffect(() => {
+    setMounted(true);
+    
     // Check for system preference first
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
@@ -17,22 +21,36 @@ export function ThemeToggle() {
     
     if (storedTheme) {
       setTheme(storedTheme);
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+      applyTheme(storedTheme);
     } else {
-      // Use system preference if available
+      // Use system preference
       const initialTheme = systemPrefersDark ? 'dark' : 'light';
       setTheme(initialTheme);
-      document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+      applyTheme(initialTheme);
       localStorage.setItem('theme', initialTheme);
     }
   }, []);
 
+  // Function to apply theme
+  const applyTheme = (newTheme: 'light' | 'dark') => {
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    applyTheme(newTheme);
     localStorage.setItem('theme', newTheme);
   };
+
+  // Don't render until component is mounted to prevent hydration mismatch
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <Button

@@ -2,47 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Additional base styles for better dark mode appearance */
+/* Base styles with dark mode support */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: #ffffff;
+  color: #171717;
   font-family: var(--font-inter), Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .dark body {
+  background-color: #121212;
+  color: #f8f9fa;
   color-scheme: dark;
 }
 
-/* Improved dark mode overrides with higher contrast for better readability */
+/* Dark mode overrides with higher contrast for better readability */
 .dark .bg-white {
-  background-color: var(--card);
+  background-color: #1e1e1e;
 }
 
 .dark .text-gray-900 {
-  color: var(--card-foreground);
+  color: #f8f9fa;
 }
 
 .dark .text-gray-700 {
-  color: var(--card-foreground);
+  color: #e2e8f0;
 }
 
 .dark .text-gray-600 {
-  color: var(--muted-foreground);
+  color: #cbd5e1;
 }
 
 .dark .border-gray-200 {
-  border-color: var(--border);
+  border-color: #374151;
 }
 
 .dark .bg-gray-50 {
-  background-color: var(--secondary);
+  background-color: #2d3748;
 }
 
 .dark .bg-gray-100 {
-  background-color: var(--secondary);
+  background-color: #374151;
 }
 
-/* Chart colors for better readability in dark mode */
+/* Chart colors for better dark mode visibility */
 .dark [fill="#8884d8"] {
   fill: #a78bfa;
 }
@@ -67,7 +70,7 @@ body {
   stroke: #f87171;
 }
 
-/* Fix contrast issues in dashboard cards */
+/* Fix contrast issues in cards */
 .dark .text-red-500 {
   color: #f87171;
 }
@@ -82,6 +85,15 @@ body {
   color: #60a5fa;
 }
 
+/* Shadow fix for dark mode */
+.dark .shadow,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-sm {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* Improved color variables for light/dark modes */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -105,7 +117,7 @@ body {
 }
 
 .dark {
-  /* Improved dark mode colors for better contrast */
+  /* Better dark mode colors with higher contrast */
   --background: #121212;
   --foreground: #f8f9fa;
   --card: #1e1e1e;
