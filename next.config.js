@@ -12,7 +12,7 @@ const nextConfig = {
   },
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || "https://www.utechlab.net",
-    NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE || "true", // Enable demo mode by default
+    NEXT_PUBLIC_DEMO_MODE: process.env.NODE_ENV === "production" ? "false" : "true",
   },
   async redirects() {
     return [

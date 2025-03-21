@@ -1,5 +1,4 @@
-// File: middleware.ts
-// Enhanced middleware with better authentication flow and error handling
+// middleware.ts
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -25,7 +24,6 @@ const publicPaths = [
   '/api/password-reset',
   '/api/verify-email',
   '/api/contact',
-  '/api/demo-login',
 ];
 
 // Static file extensions to ignore
@@ -51,18 +49,6 @@ export async function middleware(request: NextRequest) {
   
   // Skip middleware for static files
   if (isStaticFile(pathname)) {
-    return NextResponse.next();
-  }
-  
-  // Always allow demo mode in development
-  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
-    return NextResponse.next();
-  }
-  
-  // Check for demo cookie
-  const hasDemoCookie = request.cookies.has('demo_mode');
-  if (hasDemoCookie) {
-    console.log('[Middleware] Demo cookie detected: allowing access');
     return NextResponse.next();
   }
   
