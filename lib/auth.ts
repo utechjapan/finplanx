@@ -6,6 +6,7 @@ import GitHubProvider from "next-auth/providers/github";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { compare, hash } from "bcrypt";
+import { sendWelcomeEmail, sendPasswordResetEmail, sendLoginNotificationEmail } from "@/lib/email";
 
 // Function to determine if running in development/demo mode
 export const isDevMode = () => {
@@ -97,6 +98,16 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
           
+          // Send login notification email (in production)
+          if (!isDevMode()) {
+            try {
+              await sendLoginNotificationEmail(user.email, user.name);
+            } catch (emailError) {
+              console.error("Failed to send login notification email:", emailError);
+              // Don't block login if email fails
+            }
+          }
+          
           return {
             id: user.id,
             name: user.name,
@@ -126,6 +137,7 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     signOut: "/",
     error: "/login",
+    verifyRequest: "/verify-request",
   },
   
   callbacks: {
@@ -239,6 +251,16 @@ export async function registerUser(name: string, email: string, password: string
       },
     });
     
+    // Send welcome email (production only)
+    if (!isDevMode()) {
+      try {
+        await sendWelcomeEmail(email, name);
+      } catch (emailError) {
+        console.error("Failed to send welcome email:", emailError);
+        // Don't block registration if email fails
+      }
+    }
+    
     return {
       success: true,
       user: {
@@ -253,6 +275,117 @@ export async function registerUser(name: string, email: string, password: string
     return { 
       success: false, 
       error: "ユーザー登録中にエラーが発生しました" 
+    };
+  }
+}
+
+// Helper function for password reset
+export async function generatePasswordResetToken(email: string) {
+  if (isDevMode()) {
+    // In demo mode, just simulate token generation
+    return {
+      success: true,
+      token: "demo-token-" + Date.now()
+    };
+  }
+  
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    
+    if (!user) {
+      // We don't want to reveal if a user exists or not for security
+      return {
+        success: true,
+        message: "パスワードリセットリンクを送信しました（メールアドレスが登録されている場合）"
+      };
+    }
+    
+    // Generate a random token
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    // Store token in database
+    await prisma.passwordReset.upsert({
+      where: { userId: user.id },
+      update: {
+        token,
+        expiresAt,
+      },
+      create: {
+        userId: user.id,
+        token,
+        expiresAt,
+      }
+    });
+    
+    // Send password reset email
+    await sendPasswordResetEmail(email, user.name, token);
+    
+    return {
+      success: true,
+      message: "パスワードリセットリンクを送信しました"
+    };
+    
+  } catch (error) {
+    console.error("Password reset token generation error:", error);
+    return {
+      success: false,
+      error: "パスワードリセットリンクの生成中にエラーが発生しました"
+    };
+  }
+}
+
+// Helper function to reset password with token
+export async function resetPassword(token: string, newPassword: string) {
+  if (isDevMode()) {
+    // In demo mode, just simulate password reset
+    return {
+      success: true,
+      message: "パスワードがリセットされました"
+    };
+  }
+  
+  try {
+    // Find token in database
+    const resetRecord = await prisma.passwordReset.findFirst({
+      where: {
+        token,
+        expiresAt: { gt: new Date() } // Token must not be expired
+      },
+      include: { user: true }
+    });
+    
+    if (!resetRecord) {
+      return {
+        success: false,
+        error: "無効または期限切れのトークンです"
+      };
+    }
+    
+    // Hash new password
+    const hashedPassword = await hash(newPassword, 12);
+    
+    // Update user password
+    await prisma.user.update({
+      where: { id: resetRecord.userId },
+      data: { password: hashedPassword }
+    });
+    
+    // Delete the token
+    await prisma.passwordReset.delete({
+      where: { id: resetRecord.id }
+    });
+    
+    return {
+      success: true,
+      message: "パスワードが正常にリセットされました"
+    };
+    
+  } catch (error) {
+    console.error("Password reset error:", error);
+    return {
+      success: false,
+      error: "パスワードのリセット中にエラーが発生しました"
     };
   }
 }

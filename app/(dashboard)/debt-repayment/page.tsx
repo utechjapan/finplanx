@@ -16,7 +16,7 @@ export default function DebtRepaymentPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">¥1,228,505</div>
-            <p className="text-sm text-gray-500 mt-2">残り返済期間: 5年</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">残り返済期間: 5年</p>
           </CardContent>
         </Card>
         
@@ -26,7 +26,7 @@ export default function DebtRepaymentPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">¥22,451</div>
-            <p className="text-sm text-gray-500 mt-2">平均金利: 3.0%</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">平均金利: 3.0%</p>
           </CardContent>
         </Card>
         
@@ -36,7 +36,7 @@ export default function DebtRepaymentPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">2030年6月</div>
-            <p className="text-sm text-gray-500 mt-2">総支払額: ¥1,347,060</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">総支払額: ¥1,347,060</p>
           </CardContent>
         </Card>
       </div>

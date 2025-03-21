@@ -187,183 +187,184 @@ export default function FinancesPage() {
         
         <TabsContent value="transactions" className="mt-6">
           <Card>
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
-              <CardTitle>取引履歴</CardTitle>
-              <Button variant="outline" onClick={() => document.getElementById('new-transaction-form')?.scrollIntoView({ behavior: 'smooth' })}>
-                新規取引を追加
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>日付</TableHead>
-                      <TableHead>カテゴリ</TableHead>
-                      <TableHead>内容</TableHead>
-                      <TableHead className="text-right">金額</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentTransactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell>{new Date(transaction.date).toLocaleDateString('ja-JP')}</TableCell>
-                        <TableCell>{transaction.category}</TableCell>
-                        <TableCell>{transaction.description}</TableCell>
-                        <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                          {transaction.amount.toLocaleString()}円
-                        </TableCell>
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
+                <CardTitle>取引履歴</CardTitle>
+                <Button variant="outline" onClick={() => document.getElementById('new-transaction-form')?.scrollIntoView({ behavior: 'smooth' })}>
+                  新規取引を追加
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>日付</TableHead>
+                        <TableHead>カテゴリ</TableHead>
+                        <TableHead>内容</TableHead>
+                        <TableHead className="text-right">金額</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              
-              <div id="new-transaction-form" className="mt-8 p-4 border rounded-lg bg-gray-50">
-                <h3 className="text-lg font-medium mb-4">新規取引の追加</h3>
-                <form onSubmit={handleNewTransaction} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                        金額 (収入は正の値、支出は負の値)
-                      </label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        value={newTransactionAmount}
-                        onChange={(e) => setNewTransactionAmount(e.target.value)}
-                        placeholder="-1000 (支出の場合はマイナス)"
-                        required
-                      />
+                    </TableHeader>
+                    <TableBody>
+                      {recentTransactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                          <TableCell>{new Date(transaction.date).toLocaleDateString('ja-JP')}</TableCell>
+                          <TableCell>{transaction.category}</TableCell>
+                          <TableCell>{transaction.description}</TableCell>
+                          <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                            {transaction.amount.toLocaleString()}円
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                <div id="new-transaction-form" className="mt-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <h3 className="text-lg font-medium mb-4">新規取引の追加</h3>
+                  <form onSubmit={handleNewTransaction} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          金額 (収入は正の値、支出は負の値)
+                        </label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          value={newTransactionAmount}
+                          onChange={(e) => setNewTransactionAmount(e.target.value)}
+                          placeholder="-1000 (支出の場合はマイナス)"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          カテゴリ
+                        </label>
+                        <Select
+                          id="category"
+                          value={newTransactionCategory}
+                          onChange={(e) => setNewTransactionCategory(e.target.value)}
+                          required
+                        >
+                          <option value="収入">収入</option>
+                          <option value="住居費">住居費</option>
+                          <option value="食費">食費</option>
+                          <option value="通信費">通信費</option>
+                          <option value="光熱費">光熱費</option>
+                          <option value="交通費">交通費</option>
+                          <option value="娯楽費">娯楽費</option>
+                          <option value="その他">その他</option>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          内容
+                        </label>
+                        <Input
+                          id="description"
+                          type="text"
+                          value={newTransactionDescription}
+                          onChange={(e) => setNewTransactionDescription(e.target.value)}
+                          placeholder="取引の説明"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          日付
+                        </label>
+                        <DatePicker
+                          id="date"
+                          value={newTransactionDate}
+                          onChange={(date) => date && setNewTransactionDate(date)}
+                        />
+                      </div>
                     </div>
                     
-                    <div>
-                      <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                        カテゴリ
-                      </label>
-                      <Select
-                        id="category"
-                        value={newTransactionCategory}
-                        onChange={(e) => setNewTransactionCategory(e.target.value)}
-                        required
-                      >
-                        <option value="収入">収入</option>
-                        <option value="住居費">住居費</option>
-                        <option value="食費">食費</option>
-                        <option value="通信費">通信費</option>
-                        <option value="光熱費">光熱費</option>
-                        <option value="交通費">交通費</option>
-                        <option value="娯楽費">娯楽費</option>
-                        <option value="その他">その他</option>
-                      </Select>
+                    <div className="flex justify-end">
+                      <Button type="submit">取引を追加</Button>
                     </div>
-                    
-                    <div>
-                      <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                        内容
-                      </label>
-                      <Input
-                        id="description"
-                        type="text"
-                        value={newTransactionDescription}
-                        onChange={(e) => setNewTransactionDescription(e.target.value)}
-                        placeholder="取引の説明"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                        日付
-                      </label>
-                      <DatePicker
-                        id="date"
-                        value={newTransactionDate}
-                        onChange={(date) => date && setNewTransactionDate(date)}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end">
-                    <Button type="submit">取引を追加</Button>
-                  </div>
-                </form>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="budget" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>予算管理</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>カテゴリ</TableHead>
-                      <TableHead>予算額</TableHead>
-                      <TableHead>使用額</TableHead>
-                      <TableHead>残額</TableHead>
-                      <TableHead>使用率</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {budgetData.map((item) => (
-                      <TableRow key={item.category}>
-                        <TableCell>{item.category}</TableCell>
-                        <TableCell>¥{item.budgeted.toLocaleString()}</TableCell>
-                        <TableCell>¥{item.spent.toLocaleString()}</TableCell>
-                        <TableCell>¥{item.remaining.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${
-                                  item.percentage > 90 ? 'bg-red-500' : 
-                                  item.percentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
-                                }`}
-                                style={{ width: `${item.percentage}%` }}
-                              ></div>
+                  </form>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="budget" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>予算管理</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>カテゴリ</TableHead>
+                        <TableHead>予算額</TableHead>
+                        <TableHead>使用額</TableHead>
+                        <TableHead>残額</TableHead>
+                        <TableHead>使用率</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {budgetData.map((item) => (
+                        <TableRow key={item.category}>
+                          <TableCell>{item.category}</TableCell>
+                          <TableCell>¥{item.budgeted.toLocaleString()}</TableCell>
+                          <TableCell>¥{item.spent.toLocaleString()}</TableCell>
+                          <TableCell>¥{item.remaining.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full ${
+                                    item.percentage > 90 ? 'bg-red-500' : 
+                                    item.percentage > 70 ? 'bg-yellow-500' : 'bg-green-500'
+                                  }`}
+                                  style={{ width: `${item.percentage}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm">{item.percentage}%</span>
                             </div>
-                            <span className="text-sm">{item.percentage}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              
-              <div className="mt-8">
-                <h3 className="text-lg font-medium mb-4">総括</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-500 mb-1">総予算</div>
-                    <div className="text-2xl font-bold">
-                      ¥{budgetData.reduce((sum, item) => sum + item.budgeted, 0).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                <div className="mt-8">
+                  <h3 className="text-lg font-medium mb-4">総括</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">総予算</div>
+                      <div className="text-2xl font-bold">
+                        ¥{budgetData.reduce((sum, item) => sum + item.budgeted, 0).toLocaleString()}
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-500 mb-1">総支出</div>
-                    <div className="text-2xl font-bold">
-                      ¥{budgetData.reduce((sum, item) => sum + item.spent, 0).toLocaleString()}
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">総支出</div>
+                      <div className="text-2xl font-bold">
+                        ¥{budgetData.reduce((sum, item) => sum + item.spent, 0).toLocaleString()}
+                      </div>
                     </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="text-sm text-gray-500 mb-1">残額</div>
-                    <div className="text-2xl font-bold text-green-600">
-                      ¥{budgetData.reduce((sum, item) => sum + item.remaining, 0).toLocaleString()}
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">残額</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        ¥{budgetData.reduce((sum, item) => sum + item.remaining, 0).toLocaleString()}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    
   );
 }
