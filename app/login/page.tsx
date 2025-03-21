@@ -1,3 +1,4 @@
+// app/login/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -40,7 +41,7 @@ export default function LoginPage() {
     }
   }, [authError]);
   
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<LoginFormData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
@@ -84,39 +85,6 @@ export default function LoginPage() {
       console.error(`${provider} login error:`, error);
       setAuthError(`${provider}ログイン中にエラーが発生しました`);
       setSocialLoading(null);
-    }
-  };
-
-  // Handle demo login - improved implementation
-  const loginAsDemo = async () => {
-    setIsLoading(true);
-    // Pre-fill the form fields with demo credentials
-    setValue('email', 'demo@example.com');
-    setValue('password', 'password123');
-    
-    try {
-      // Short delay to show the credentials being filled in
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const result = await signIn('credentials', {
-        redirect: false,
-        email: 'demo@example.com',
-        password: 'password123',
-      });
-      
-      if (result?.error) {
-        console.error('Demo login error:', result.error);
-        setAuthError('デモログインに失敗しました。しばらくしてからやり直してください。');
-        setIsLoading(false);
-      } else {
-        // Successful login - force redirect to dashboard
-        document.cookie = "demo_mode=1; path=/; max-age=86400"; // Set a demo mode cookie for 24 hours
-        window.location.href = '/dashboard';
-      }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      setAuthError('デモログイン処理中にエラーが発生しました');
-      setIsLoading(false);
     }
   };
   
@@ -292,33 +260,6 @@ export default function LoginPage() {
                     )}
                   </Button>
                 </div>
-
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                  </div>
-                  <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500 dark:bg-gray-800 dark:text-gray-400">または</span>
-                  </div>
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-600 dark:hover:text-white"
-                  onClick={loginAsDemo}
-                  disabled={isLoading || socialLoading !== null}
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      ログイン中...
-                    </>
-                  ) : 'デモユーザーとしてログイン'}
-                </Button>
                 
                 <div className="text-center mt-4">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
