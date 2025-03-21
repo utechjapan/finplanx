@@ -95,7 +95,6 @@ export const authOptions: NextAuthOptions = {
           }
 
           const passwordMatch = await compare(credentials.password, user.password);
-
           if (!passwordMatch) {
             return null;
           }
@@ -103,7 +102,8 @@ export const authOptions: NextAuthOptions = {
           // Send login notification email (in production)
           if (!isDevMode()) {
             try {
-              await sendLoginNotificationEmail(user.email, user.name);
+              // Cast email as non-null and provide a fallback for name
+              await sendLoginNotificationEmail(user.email!, user.name || "Unknown User");
             } catch (emailError) {
               console.error("Failed to send login notification email:", emailError);
               // Don't block login if email fails
@@ -148,15 +148,12 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-
-        // Store provider info if using OAuth
         if (account) {
           token.provider = account.provider;
         }
       }
       return token;
     },
-
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
@@ -165,20 +162,16 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-
-    // Additional callback to handle sign-in from OAuth providers in dev mode
     async signIn({ user, account, profile }) {
       if (isDevMode() && account && (account.provider === "google" || account.provider === "github")) {
         return true;
       }
 
       if (account && account.provider === "google") {
-        // Custom logic for Google sign-in if needed
         return true;
       }
 
       if (account && account.provider === "github") {
-        // Custom logic for GitHub sign-in if needed
         return true;
       }
 
@@ -186,26 +179,20 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  // Debug mode in development
   debug: process.env.NODE_ENV === "development",
 
-  // Set the session strategy to JWT
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
-  // Use a consistent secret across environments
   secret: process.env.NEXTAUTH_SECRET || "development-secret-key",
 };
 
 // Helper function for user registration
 export async function registerUser(name: string, email: string, password: string) {
-  // In demo mode, just return success without database operations
   if (isDevMode()) {
     console.log("Demo mode: Simulating successful user registration for", email);
-
-    // Check if trying to register an existing demo user
     const existingDemoUser = demoUsers.find((user) => user.email === email);
     if (existingDemoUser) {
       return {
@@ -213,8 +200,6 @@ export async function registerUser(name: string, email: string, password: string
         error: "このメールアドレスは既に登録されています",
       };
     }
-
-    // In demo mode, always succeed with a new demo user
     return {
       success: true,
       user: {
@@ -227,25 +212,14 @@ export async function registerUser(name: string, email: string, password: string
   }
 
   try {
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      return {
-        success: false,
-        error: "このメールアドレスは既に登録されています",
-      };
+      return { success: false, error: "このメールアドレスは既に登録されています" };
     }
 
-    // Hash password
     const hashedPassword = await hash(password, 12);
-
-    // Generate verification token
     const verificationToken = crypto.randomUUID();
 
-    // Create user with verification token
     const user = await prisma.user.create({
       data: {
         name,
@@ -255,14 +229,10 @@ export async function registerUser(name: string, email: string, password: string
       },
     });
 
-    // Send verification email
-    if (!isDevMode()) {
-      try {
-        await sendEmailVerificationEmail(email, name, verificationToken);
-      } catch (emailError) {
-        console.error("Failed to send verification email:", emailError);
-        // Don't block registration if email fails
-      }
+    try {
+      await sendEmailVerificationEmail(email, name, verificationToken);
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
     }
 
     return {
@@ -277,215 +247,107 @@ export async function registerUser(name: string, email: string, password: string
     };
   } catch (error) {
     console.error("User registration error:", error);
-    return {
-      success: false,
-      error: "ユーザー登録中にエラーが発生しました",
-    };
+    return { success: false, error: "ユーザー登録中にエラーが発生しました" };
   }
 }
 
-// Generate email verification token (used for resending verification emails)
+// Generate email verification token (for resending verification emails)
 export async function generateEmailVerificationTokenForResend(email: string) {
   if (isDevMode()) {
-    return {
-      success: true,
-      token: "demo-verification-" + Date.now(),
-    };
+    return { success: true, token: "demo-verification-" + Date.now() };
   }
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-
     if (!user) {
-      return {
-        success: false,
-        error: "ユーザーが見つかりません",
-      };
+      return { success: false, error: "ユーザーが見つかりません" };
     }
-
-    // If already verified, no need to do it again
     if (user.emailVerified) {
-      return {
-        success: true,
-        message: "メールアドレスは既に確認済みです",
-      };
+      return { success: true, message: "メールアドレスは既に確認済みです" };
     }
-
-    // Generate a random token
     const token = crypto.randomUUID();
-
-    // Store token in user record
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        verificationToken: token,
-      },
-    });
-
-    // Send verification email
-    await sendEmailVerificationEmail(email, user.name, token);
-
-    return {
-      success: true,
-      message: "確認メールを送信しました",
-    };
+    await prisma.user.update({ where: { id: user.id }, data: { verificationToken: token } });
+    await sendEmailVerificationEmail(email, user.name || "Unknown", token);
+    return { success: true, message: "確認メールを送信しました" };
   } catch (error) {
     console.error("Email verification token generation error:", error);
-    return {
-      success: false,
-      error: "確認メールの生成中にエラーが発生しました",
-    };
+    return { success: false, error: "確認メールの生成中にエラーが発生しました" };
   }
 }
 
 // Verify email with token
 export async function verifyEmail(token: string) {
   if (isDevMode()) {
-    return {
-      success: true,
-      message: "メールアドレスが確認されました",
-    };
+    return { success: true, message: "メールアドレスが確認されました" };
   }
 
   try {
-    // Find user with this verification token
     const user = await prisma.user.findFirst({
-      where: {
-        verificationToken: token,
-      },
+      where: { verificationToken: token },
     });
-
     if (!user) {
-      return {
-        success: false,
-        error: "無効または期限切れのトークンです",
-      };
+      return { success: false, error: "無効または期限切れのトークンです" };
     }
-
-    // Mark email as verified
     await prisma.user.update({
       where: { id: user.id },
-      data: {
-        emailVerified: new Date(),
-        verificationToken: null,
-      },
+      data: { emailVerified: new Date(), verificationToken: null },
     });
-
-    return {
-      success: true,
-      message: "メールアドレスが正常に確認されました",
-    };
+    return { success: true, message: "メールアドレスが正常に確認されました" };
   } catch (error) {
     console.error("Email verification error:", error);
-    return {
-      success: false,
-      error: "メールアドレスの確認中にエラーが発生しました",
-    };
+    return { success: false, error: "メールアドレスの確認中にエラーが発生しました" };
   }
 }
 
 // Helper function for password reset
 export async function generatePasswordResetToken(email: string) {
   if (isDevMode()) {
-    return {
-      success: true,
-      token: "demo-token-" + Date.now(),
-    };
+    return { success: true, token: "demo-token-" + Date.now() };
   }
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-
     if (!user) {
-      return {
-        success: true,
-        message: "パスワードリセットリンクを送信しました（メールアドレスが登録されている場合）",
-      };
+      return { success: true, message: "パスワードリセットリンクを送信しました（メールアドレスが登録されている場合）" };
     }
-
-    // Generate a random token
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Store token in database
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await prisma.passwordReset.upsert({
       where: { userId: user.id },
-      update: {
-        token,
-        expiresAt,
-      },
-      create: {
-        userId: user.id,
-        token,
-        expiresAt,
-      },
+      update: { token, expiresAt },
+      create: { userId: user.id, token, expiresAt },
     });
-
-    // Send password reset email
-    await sendPasswordResetEmail(email, user.name, token);
-
-    return {
-      success: true,
-      message: "パスワードリセットリンクを送信しました",
-    };
+    await sendPasswordResetEmail(email, user.name || "Unknown", token);
+    return { success: true, message: "パスワードリセットリンクを送信しました" };
   } catch (error) {
     console.error("Password reset token generation error:", error);
-    return {
-      success: false,
-      error: "パスワードリセットリンクの生成中にエラーが発生しました",
-    };
+    return { success: false, error: "パスワードリセットリンクの生成中にエラーが発生しました" };
   }
 }
 
 // Helper function to reset password with token
 export async function resetPassword(token: string, newPassword: string) {
   if (isDevMode()) {
-    return {
-      success: true,
-      message: "パスワードがリセットされました",
-    };
+    return { success: true, message: "パスワードがリセットされました" };
   }
 
   try {
-    // Find token in database
     const resetRecord = await prisma.passwordReset.findFirst({
-      where: {
-        token,
-        expiresAt: { gt: new Date() },
-      },
+      where: { token, expiresAt: { gt: new Date() } },
       include: { user: true },
     });
-
     if (!resetRecord) {
-      return {
-        success: false,
-        error: "無効または期限切れのトークンです",
-      };
+      return { success: false, error: "無効または期限切れのトークンです" };
     }
-
-    // Hash new password
     const hashedPassword = await hash(newPassword, 12);
-
-    // Update user password
     await prisma.user.update({
       where: { id: resetRecord.userId },
       data: { password: hashedPassword },
     });
-
-    // Delete the token
-    await prisma.passwordReset.delete({
-      where: { id: resetRecord.id },
-    });
-
-    return {
-      success: true,
-      message: "パスワードが正常にリセットされました",
-    };
+    await prisma.passwordReset.delete({ where: { id: resetRecord.id } });
+    return { success: true, message: "パスワードが正常にリセットされました" };
   } catch (error) {
     console.error("Password reset error:", error);
-    return {
-      success: false,
-      error: "パスワードのリセット中にエラーが発生しました",
-    };
+    return { success: false, error: "パスワードのリセット中にエラーが発生しました" };
   }
 }
