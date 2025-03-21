@@ -1,73 +1,58 @@
-// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-// Public paths that don't require authentication
 const publicPaths = [
   '/',
   '/login',
   '/register',
-  '/forgot-password',
-  '/reset-password',
-  '/verify-email',
-  '/verify-email-success',
-  '/verify-email-error',
+  '/demo',
   '/api/auth',
   '/api/register',
-  '/api/password-reset',
-  '/api/contact',
   '/terms',
   '/privacy',
   '/contact',
   '/faq',
 ];
 
-// This function is the middleware
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Allow static files and Next.js internals
-  if (pathname.includes('.') || pathname.startsWith('/_next')) {
-    return NextResponse.next();
-  }
-  
-  // Check for demo mode cookie
+  // In production mode, NODE_ENV is "production"
+  // Do not bypass auth in production
   const hasDemoCookie = request.cookies.has('demo_mode');
   if (hasDemoCookie) {
+    console.log('[Middleware] Demo cookie detected: allowing access');
     return NextResponse.next();
   }
   
-  // Check for public paths
   for (const path of publicPaths) {
     if (pathname === path || pathname.startsWith(`${path}/`)) {
       return NextResponse.next();
     }
   }
   
-  // API routes can handle their own auth
   if (pathname.startsWith('/api/')) {
     return NextResponse.next();
   }
-
-  // Get JWT token
-  const token = await getToken({ 
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET 
-  });
   
-  // If not authenticated, redirect to login
+  if (pathname.includes('.')) {
+    return NextResponse.next();
+  }
+
+  const token = await getToken({ req: request });
+  
   if (!token) {
+    console.log('[Middleware] No token found, redirecting to login');
     const url = new URL('/login', request.url);
     url.searchParams.set('callbackUrl', encodeURI(pathname));
     return NextResponse.redirect(url);
   }
   
-  // Authenticated - allow access
+  console.log('[Middleware] User is authenticated, allowing access');
   return NextResponse.next();
 }
 
-// Apply middleware to protected paths only
 export const config = {
   matcher: [
     '/dashboard/:path*',
@@ -75,8 +60,6 @@ export const config = {
     '/life-plan/:path*',
     '/debt-repayment/:path*',
     '/investments/:path*',
-    '/reports/:path*',
-    '/profile/:path*',
-    '/settings/:path*',
+    '/reports/:path*'
   ],
 };

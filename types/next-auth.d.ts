@@ -1,4 +1,3 @@
-// types/next-auth.d.ts
 import NextAuth, { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
@@ -9,7 +8,6 @@ declare module "next-auth" {
   }
 }
 
-// JWT トークンにユーザーIDを含めるための拡張
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
