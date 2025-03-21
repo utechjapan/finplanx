@@ -23,6 +23,11 @@ const nextConfig = {
       },
     ];
   },
+  // Add experimental features if needed
+  experimental: {
+    // Explicitly opt out of the App Router if your project doesn't use it
+    appDir: true,
+  },
 };
 
 module.exports = nextConfig;

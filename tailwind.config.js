@@ -11,47 +11,39 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: '#3b82f6', // Blue-500
+          foreground: '#ffffff', // White
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: '#6b7280', // Gray-500
+          foreground: '#ffffff', // White
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          DEFAULT: '#ef4444', // Red-500
+          foreground: '#ffffff', // White
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: '#f3f4f6', // Gray-100
+          foreground: '#6b7280', // Gray-500
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: '#f3f4f6', // Gray-100
+          foreground: '#1f2937', // Gray-800
         },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
-        },
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
-        },
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+        background: '#ffffff', // White
+        foreground: '#1f2937', // Gray-800
+        border: '#e5e7eb', // Gray-200
+        input: '#e5e7eb', // Gray-200
+        ring: '#3b82f6', // Blue-500
       },
       fontFamily: {
-        sans: ['var(--font-inter)'],
-        mono: ['var(--font-roboto-mono)'],
+        sans: ['Inter', 'sans-serif'],
+        mono: ['Roboto Mono', 'monospace'],
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        lg: '0.5rem',
+        md: '0.375rem',
+        sm: '0.25rem',
       },
     },
   },
