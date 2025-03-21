@@ -18,6 +18,7 @@ const nextConfig = {
   // Enable this if your app has environment variables needed at build time
   env: {
     DEMO_MODE: process.env.DEMO_MODE || process.env.NODE_ENV !== 'production' ? '1' : '0',
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000',
   },
   // Add support for custom redirects
   async redirects() {
