@@ -805,22 +805,15 @@ export default function DebtRepaymentPage() {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="label" 
-                          tick={({ x, y, payload }) => {
-                            // 12か月ごとに表示するようにする
-                            const month = payload.value.split('ヶ')[0];
-                            if (parseInt(month) % 12 === 0) {
-                              return (
-                                <text x={x} y={y + 15} textAnchor="middle" fill="#666">
-                                  {Math.floor(parseInt(month) / 12)}年目
-                                </text>
-                              );
-                            }
-                            return null;
-                          }}
+                          ticks={amortizationSchedule
+                            .filter((_, index) => index % 12 === 0)
+                            .map((schedule) => schedule.label)}
                         />
                         <YAxis />
                         <Tooltip 
-                          formatter={(value) => formatCurrency(value)}
+                          formatter={(value) => 
+                            typeof value === 'number' ? formatCurrency(value) : value
+                          }
                           labelFormatter={(label) => `${label}`}
                         />
                         <Legend />
