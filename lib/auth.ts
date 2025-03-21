@@ -35,10 +35,11 @@ export const demoUsers = [
 ];
 
 export const authOptions: NextAuthOptions = {
-  // Use Prisma adapter in production mode
+  // Use Prisma adapter for database session storage when not in demo mode
   ...(isDevMode() ? {} : { adapter: PrismaAdapter(prisma) }),
 
   providers: [
+    // Credentials provider for email/password login
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -54,14 +55,11 @@ export const authOptions: NextAuthOptions = {
           // In dev/demo mode, use demo users
           if (isDevMode()) {
             console.log("Demo mode authentication attempt:", credentials.email);
-
-            // First check if it's one of our demo users
             const demoUser = demoUsers.find(
               (user) =>
                 user.email === credentials.email &&
                 user.password === credentials.password
             );
-
             if (demoUser) {
               console.log("Demo user authenticated:", demoUser.email);
               return {
@@ -70,8 +68,6 @@ export const authOptions: NextAuthOptions = {
                 email: demoUser.email,
               };
             }
-
-            // Demo mode feature: In demo mode, allow any credentials to log in as demo user
             if (process.env.DEMO_MODE === "1") {
               console.log("Creating demo session for user:", credentials.email);
               return {
@@ -80,7 +76,6 @@ export const authOptions: NextAuthOptions = {
                 email: "demo@example.com",
               };
             }
-
             return null;
           }
 
@@ -88,11 +83,9 @@ export const authOptions: NextAuthOptions = {
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
           });
-
           if (!user || !user.password) {
             return null;
           }
-
           const passwordMatch = await compare(credentials.password, user.password);
           if (!passwordMatch) {
             return null;
@@ -101,11 +94,10 @@ export const authOptions: NextAuthOptions = {
           // Send login notification email (in production)
           if (!isDevMode()) {
             try {
-              // Cast email as non-null and provide fallback for name
+              // Ensure email and name are non-null
               await sendLoginNotificationEmail(user.email!, user.name || "Unknown User");
             } catch (emailError) {
               console.error("Failed to send login notification email:", emailError);
-              // Don't block login if email fails
             }
           }
 
@@ -151,7 +143,6 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
@@ -160,7 +151,6 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-
     async signIn({ user, account, profile }) {
       if (isDevMode() && account && (account.provider === "google" || account.provider === "github")) {
         return true;
@@ -209,7 +199,6 @@ export async function registerUser(name: string, email: string, password: string
     if (existingUser) {
       return { success: false, error: "このメールアドレスは既に登録されています" };
     }
-
     const hashedPassword = await hash(password, 12);
     const verificationToken = crypto.randomUUID();
 
@@ -234,7 +223,7 @@ export async function registerUser(name: string, email: string, password: string
         id: user.id,
         name: user.name,
         email: user.email,
-        createdAt: user.createdAt, // Now available from the schema
+        createdAt: user.createdAt, // Now available from schema
       },
       message: "アカウントが作成されました。メールアドレスの確認を行ってください。",
     };
@@ -249,7 +238,6 @@ export async function generateEmailVerificationTokenForResend(email: string) {
   if (isDevMode()) {
     return { success: true, token: "demo-verification-" + Date.now() };
   }
-
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -273,7 +261,6 @@ export async function verifyEmail(token: string) {
   if (isDevMode()) {
     return { success: true, message: "メールアドレスが確認されました" };
   }
-
   try {
     const user = await prisma.user.findFirst({ where: { verificationToken: token } });
     if (!user) {
@@ -295,7 +282,6 @@ export async function generatePasswordResetToken(email: string) {
   if (isDevMode()) {
     return { success: true, token: "demo-token-" + Date.now() };
   }
-
   try {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -321,7 +307,6 @@ export async function resetPassword(token: string, newPassword: string) {
   if (isDevMode()) {
     return { success: true, message: "パスワードがリセットされました" };
   }
-
   try {
     const resetRecord = await prisma.passwordReset.findFirst({
       where: { token, expiresAt: { gt: new Date() } },
