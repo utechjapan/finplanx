@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcrypt";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { registerUser } from "@/lib/auth";
 
-// ユーザー登録スキーマ
+// User registration schema
 const userSchema = z.object({
   name: z.string().min(1, "名前は必須です"),
   email: z.string().email("有効なメールアドレスを入力してください"),
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     
-    // バリデーション
+    // Validation
     const result = userSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
@@ -24,42 +25,25 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    const { name, email, password } = result.data;
+    // Register user with our helper function
+    const { success, user, error } = await registerUser(
+      result.data.name,
+      result.data.email,
+      result.data.password
+    );
     
-    // 既存ユーザーのチェック
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-    
-    if (existingUser) {
+    if (!success) {
       return NextResponse.json(
-        { error: "このメールアドレスは既に登録されています" },
+        { error: error || "ユーザー登録中にエラーが発生しました" },
         { status: 409 }
       );
     }
     
-    // パスワードのハッシュ化
-    const hashedPassword = await hash(password, 12);
-    
-    // ユーザーの作成
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-    });
-    
-    // 成功レスポンス
+    // Return success response
     return NextResponse.json(
       { 
         message: "ユーザーが正常に登録されました", 
-        user: { 
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          createdAt: user.createdAt 
-        } 
+        user 
       },
       { status: 201 }
     );
