@@ -1,3 +1,4 @@
+// middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
@@ -10,6 +11,10 @@ const publicPaths = [
   '/demo',
   '/api/auth',
   '/api/register',
+  '/terms',
+  '/privacy',
+  '/contact',
+  '/faq',
 ];
 
 // この関数はミドルウェアとして実行される
@@ -17,8 +22,10 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // パブリックパスの場合、認証チェックをスキップ
-  if (publicPaths.some((path) => pathname.startsWith(path))) {
-    return NextResponse.next();
+  for (const path of publicPaths) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) {
+      return NextResponse.next();
+    }
   }
   
   // API エンドポイントの場合、認証チェックをスキップ
@@ -34,8 +41,11 @@ export async function middleware(request: NextRequest) {
   // JWT トークンを取得
   const token = await getToken({ req: request });
   
-  // 未認証の場合はログインページにリダイレクト
-  if (!token) {
+  // デモモードチェック - 開発環境またはDEMO_MODE=1の場合はアクセスを許可
+  const isDemoMode = process.env.NODE_ENV === 'development' || process.env.DEMO_MODE === '1';
+  
+  // 未認証でデモモードでない場合はログインページにリダイレクト
+  if (!token && !isDemoMode) {
     const url = new URL('/login', request.url);
     url.searchParams.set('callbackUrl', encodeURI(pathname));
     return NextResponse.redirect(url);

@@ -9,17 +9,21 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
-    // Get stored theme or default to light mode for better readability
+    // Check for system preference first
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Get stored theme or use system preference
     const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     
     if (storedTheme) {
       setTheme(storedTheme);
       document.documentElement.classList.toggle('dark', storedTheme === 'dark');
     } else {
-      // Default to light mode for better readability
-      setTheme('light');
-      document.documentElement.classList.toggle('dark', false);
-      localStorage.setItem('theme', 'light');
+      // Use system preference if available
+      const initialTheme = systemPrefersDark ? 'dark' : 'light';
+      setTheme(initialTheme);
+      document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+      localStorage.setItem('theme', initialTheme);
     }
   }, []);
 
@@ -32,12 +36,18 @@ export function ThemeToggle() {
 
   return (
     <Button
-      variant="ghost"
+      // Using outline variant instead of ghost for better visibility
+      variant="outline" 
       size="icon"
       onClick={toggleTheme}
-      aria-label={theme === 'light' ? 'Enable dark mode' : 'Enable light mode'}
+      aria-label={theme === 'light' ? 'ダークモードに切り替え' : 'ライトモードに切り替え'}
+      className="bg-opacity-80 text-primary hover:text-primary-foreground hover:bg-primary"
     >
-      {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+      {theme === 'light' ? (
+        <Moon size={20} />
+      ) : (
+        <Sun size={20} className="text-yellow-300" />
+      )}
     </Button>
   );
 }

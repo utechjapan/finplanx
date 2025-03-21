@@ -102,7 +102,14 @@ export default function RegisterPage() {
   // Skip registration form and go straight to demo
   const goToDemo = async () => {
     setIsLoading(true);
+    
     try {
+      // Show feedback message
+      setSuccess('デモアカウントにログインしています...');
+      
+      // Short delay for user experience
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const result = await signIn('credentials', {
         redirect: false,
         email: 'demo@example.com',
@@ -110,14 +117,19 @@ export default function RegisterPage() {
       });
       
       if (result?.error) {
-        setError('デモログインに失敗しました。');
+        console.error('Demo login error:', result.error);
+        setError('デモログインに失敗しました。DEMO_MODE環境変数が設定されているか確認してください。');
         setIsLoading(false);
+        setSuccess(null);
       } else {
+        // Successful login
         router.push('/dashboard');
       }
     } catch (error) {
+      console.error('Demo login error:', error);
       setError('デモログイン処理中にエラーが発生しました');
       setIsLoading(false);
+      setSuccess(null);
     }
   };
   
@@ -250,6 +262,7 @@ export default function RegisterPage() {
                   <div className="flex items-center h-5">
                     <input
                       id="terms"
+                      name="terms"
                       type="checkbox"
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
                       required
@@ -299,7 +312,7 @@ export default function RegisterPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full dark:text-gray-300 dark:border-gray-600"
+                  className="w-full dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-600 dark:hover:text-white"
                   onClick={goToDemo}
                   disabled={isLoading}
                 >

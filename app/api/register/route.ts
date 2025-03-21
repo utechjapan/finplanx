@@ -1,9 +1,8 @@
 // app/api/register/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { hash } from "bcrypt";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { registerUser } from "@/lib/auth";
+import { registerUser, isDevMode } from "@/lib/auth";
 
 // User registration schema
 const userSchema = z.object({
@@ -15,6 +14,11 @@ const userSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    
+    // Log registration attempt in dev/demo mode
+    if (isDevMode()) {
+      console.log('Registration attempt in demo mode:', body.email);
+    }
     
     // Validation
     const result = userSchema.safeParse(body);
@@ -43,7 +47,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { 
         message: "ユーザーが正常に登録されました", 
-        user 
+        user,
+        demoMode: isDevMode() 
       },
       { status: 201 }
     );

@@ -40,7 +40,7 @@ export default function LoginPage() {
     }
   }, [authError]);
   
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
@@ -73,10 +73,17 @@ export default function LoginPage() {
     }
   };
 
-  // Handle demo login
+  // Handle demo login - improved implementation
   const loginAsDemo = async () => {
     setIsLoading(true);
+    // Pre-fill the form fields with demo credentials
+    setValue('email', 'demo@example.com');
+    setValue('password', 'password123');
+    
     try {
+      // Short delay to show the credentials being filled in
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       const result = await signIn('credentials', {
         redirect: false,
         email: 'demo@example.com',
@@ -84,12 +91,15 @@ export default function LoginPage() {
       });
       
       if (result?.error) {
-        setAuthError('デモログインに失敗しました。');
+        console.error('Demo login error:', result.error);
+        setAuthError('デモログインに失敗しました。DEMO_MODE環境変数が設定されているか確認してください。');
         setIsLoading(false);
       } else {
+        // Successful login
         router.push('/dashboard');
       }
     } catch (error) {
+      console.error('Demo login error:', error);
       setAuthError('デモログイン処理中にエラーが発生しました');
       setIsLoading(false);
     }
@@ -219,7 +229,7 @@ export default function LoginPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full dark:text-gray-300 dark:border-gray-600"
+                  className="w-full dark:text-gray-300 dark:border-gray-600 dark:hover:bg-blue-600 dark:hover:text-white"
                   onClick={loginAsDemo}
                   disabled={isLoading}
                 >

@@ -1,19 +1,17 @@
 // lib/auth.ts
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import GoogleProvider from "next-auth/providers/google";
-import GithubProvider from "next-auth/providers/github";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { compare, hash } from "bcrypt";
 
 // Function to determine if running in development/demo mode
-const isDevMode = () => {
+export const isDevMode = () => {
   return process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === "1";
 };
 
-// Demo users for development environment
-const demoUsers = [
+// Demo users for development and demo environments
+export const demoUsers = [
   {
     id: "demo-user-1",
     name: "デモユーザー",
@@ -28,26 +26,14 @@ const demoUsers = [
   },
 ];
 
+// Log the mode on startup for debugging
+console.log(`Auth mode: ${isDevMode() ? 'DEMO/DEV MODE' : 'PRODUCTION MODE'}`);
+
 export const authOptions: NextAuthOptions = {
   // Use Prisma adapter for database session storage when not in demo mode
   ...(isDevMode() ? {} : { adapter: PrismaAdapter(prisma) }),
   
   providers: [
-    // Add OAuth providers if configured
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
-      GoogleProvider({
-        clientId: process.env.GOOGLE_CLIENT_ID as string,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      })
-    ] : []),
-    
-    ...(process.env.GITHUB_ID && process.env.GITHUB_SECRET ? [
-      GithubProvider({
-        clientId: process.env.GITHUB_ID as string,
-        clientSecret: process.env.GITHUB_SECRET as string,
-      })
-    ] : []),
-    
     // Credentials provider for email/password login
     CredentialsProvider({
       name: "credentials",
@@ -63,25 +49,31 @@ export const authOptions: NextAuthOptions = {
         try {
           // In dev/demo mode, use demo users
           if (isDevMode()) {
-            const user = demoUsers.find(
+            console.log('Demo mode authentication attempt:', credentials.email);
+            
+            // First check if it's one of our demo users
+            const demoUser = demoUsers.find(
               (user) => 
                 user.email === credentials.email && 
                 user.password === credentials.password
             );
             
-            if (user) {
+            if (demoUser) {
+              console.log('Demo user authenticated:', demoUser.email);
               return {
-                id: user.id,
-                name: user.name,
-                email: user.email,
+                id: demoUser.id,
+                name: demoUser.name,
+                email: demoUser.email,
               };
             }
             
-            // Demo mode feature: Any email/password combination works
+            // Demo mode feature: Any email/password combination works, creating a temporary user
             if (process.env.DEMO_MODE === "1") {
+              console.log('Creating temporary demo user for:', credentials.email);
+              const name = credentials.email.split('@')[0];
               return {
-                id: "demo-user-1",
-                name: credentials.email.split('@')[0],
+                id: "demo-user-" + Date.now(),
+                name: name.charAt(0).toUpperCase() + name.slice(1),
                 email: credentials.email,
               };
             }
@@ -94,7 +86,7 @@ export const authOptions: NextAuthOptions = {
             where: { email: credentials.email },
           });
           
-          if (!user) {
+          if (!user || !user.password) {
             return null;
           }
           
@@ -162,8 +154,19 @@ export const authOptions: NextAuthOptions = {
 
 // Helper function for user registration
 export async function registerUser(name: string, email: string, password: string) {
-  // In demo mode, just return success
+  // In demo mode, just return success without database operations
   if (isDevMode()) {
+    console.log('Demo mode: Simulating successful user registration for', email);
+    
+    // Check if trying to register an existing demo user
+    const existingDemoUser = demoUsers.find(user => user.email === email);
+    if (existingDemoUser) {
+      return { 
+        success: false, 
+        error: "このメールアドレスは既に登録されています" 
+      };
+    }
+    
     return {
       success: true,
       user: {
