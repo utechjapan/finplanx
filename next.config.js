@@ -2,21 +2,24 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  // Ignore TypeScript errors during build
+  
+  // Completely ignore TypeScript errors during build
   typescript: {
     ignoreBuildErrors: true,
   },
+  
+  // Ignore ESLint errors during build
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Skip type checking during builds to speed up deployment
-  experimental: {
-    typedRoutes: false,
-  },
+  
+  // Environment variables
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || "https://www.utechlab.net",
     NEXT_PUBLIC_DEMO_MODE: process.env.NODE_ENV === "production" ? "false" : "true",
   },
+  
+  // Redirects
   async redirects() {
     return [
       {
