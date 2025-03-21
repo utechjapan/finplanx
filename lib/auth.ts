@@ -1,4 +1,4 @@
-// lib/auth.ts - Updated and Fixed
+// lib/auth.ts
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -36,28 +36,27 @@ const createFallbackAdapter = (): Adapter => {
   } catch (error) {
     console.warn("Failed to initialize Prisma adapter, using fallback memory adapter", error);
     
-    // In-memory adapter as fallback
-    const users = new Map();
+    // In-memory adapter as fallback that implements the Adapter interface
+    const users = new Map<string, any>();
     // Add demo user
     users.set(DEMO_USER.id, DEMO_USER);
     
     return {
       createUser: async (data) => {
         const id = crypto.randomUUID();
-        const user = { id, ...data };
+        const user = { id, ...data, emailVerified: null, createdAt: new Date() };
         users.set(id, user);
         return user;
       },
-      getUser: async (id) => {
-        return users.get(id) || null;
-      },
-      getUserByEmail: async (email) => {
+      getUser: async (id: string) => users.get(id) || null,
+      getUserByEmail: async (email: string) => {
         if (email === DEMO_USER.email) return DEMO_USER;
-        return Array.from(users.values()).find((user: any) => user.email === email) || null;
+        const found = Array.from(users.values()).find((user: any) => user.email === email);
+        return found || null;
       },
       getUserByAccount: async ({ providerAccountId, provider }) => {
-        // In demo mode, always return the demo user for simplicity
-        if (isDevMode()) return DEMO_USER;
+        // In demo mode, if providerAccountId equals "demo", return the demo user
+        if (isDevMode() && providerAccountId === "demo") return DEMO_USER;
         return null;
       },
       updateUser: async (data) => {
@@ -73,17 +72,10 @@ const createFallbackAdapter = (): Adapter => {
         users.delete(userId);
         return user;
       },
-      linkAccount: async (data) => {
-        // Just return the data in mock mode
-        return data;
-      },
-      unlinkAccount: async ({ providerAccountId, provider }) => {
-        // No-op in mock mode
-      },
-      createSession: async (data) => {
-        return data;
-      },
-      getSessionAndUser: async (sessionToken) => {
+      linkAccount: async (data) => data,
+      unlinkAccount: async ({ providerAccountId, provider }) => { /* no-op */ },
+      createSession: async (data) => data,
+      getSessionAndUser: async (sessionToken: string) => {
         if (isDevMode()) {
           return {
             user: DEMO_USER,
@@ -96,19 +88,11 @@ const createFallbackAdapter = (): Adapter => {
         }
         return null;
       },
-      updateSession: async (data) => {
-        return data;
-      },
-      deleteSession: async (sessionToken) => {
-        // No-op in mock mode
-      },
-      createVerificationToken: async (data) => {
-        return data;
-      },
-      useVerificationToken: async (params) => {
-        return null;
-      }
-    };
+      updateSession: async (data) => data,
+      deleteSession: async () => { /* no-op */ },
+      createVerificationToken: async (data) => data,
+      useVerificationToken: async () => null,
+    } as Adapter;
   }
 };
 

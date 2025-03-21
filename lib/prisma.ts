@@ -1,4 +1,4 @@
-// lib/prisma.ts - Enhanced with better error handling
+// lib/prisma.ts
 import { PrismaClient } from '@prisma/client';
 
 declare global {
@@ -13,11 +13,6 @@ const createPrismaClient = () => {
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     });
     
-    // Add error handling wrapper
-    client.$on('error', (e) => {
-      console.error('Prisma Client Error:', e);
-    });
-    
     // Test the connection
     client.$connect()
       .then(() => console.log('Database connected successfully'))
@@ -30,8 +25,18 @@ const createPrismaClient = () => {
   } catch (e) {
     console.error('Failed to initialize Prisma client:', e);
     // Return a mock client that doesn't throw errors
-    const mockClient = {} as PrismaClient;
-    return mockClient;
+    return new Proxy({} as PrismaClient, {
+      get: (target, prop) => {
+        // Return no-op functions for all methods
+        if (typeof prop === 'string') {
+          return (...args: any[]) => {
+            console.log(`Mock Prisma client called: ${String(prop)}`, args);
+            return Promise.resolve(null);
+          };
+        }
+        return undefined;
+      }
+    });
   }
 };
 
@@ -43,7 +48,7 @@ if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_MODE 
   // In demo mode, don't actually connect to a database
   if (!global.prisma && process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
     console.log('Running in demo mode without a real database connection');
-    global.prisma = {} as PrismaClient;
+    global.prisma = createPrismaClient();
   } else if (!global.prisma) {
     global.prisma = createPrismaClient();
   }

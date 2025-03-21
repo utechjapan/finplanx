@@ -27,6 +27,7 @@
   ],
   "env": {
     "NEXT_PUBLIC_DEMO_MODE": "true",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "NEXTAUTH_URL": "https://www.utechlab.net"
   }
 }
