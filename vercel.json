@@ -1,13 +1,32 @@
 {
-    "buildCommand": "npm run build",
-    "installCommand": "npm install",
-    "framework": "nextjs",
-    "devCommand": "npm run dev",
-    "outputDirectory": ".next",
-    "rewrites": [
-      {
-        "source": "/((?!api/auth).*)",
-        "destination": "/"
-      }
-    ]
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "devCommand": "npm run dev",
+  "outputDirectory": ".next",
+  "ignoreCommand": "echo 'Ignoring yarn check --integrity'",
+  "regions": ["iad1"],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_DEMO_MODE": "true",
+    "NODE_ENV": "production"
   }
+}

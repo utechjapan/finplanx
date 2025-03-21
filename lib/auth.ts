@@ -1,4 +1,4 @@
-// lib/auth.ts - Updated
+// lib/auth.ts - Updated and Fixed
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -13,6 +13,7 @@ import {
   sendEmailVerificationEmail
 } from "@/lib/email";
 import crypto from "crypto";
+import { Adapter } from "next-auth/adapters";
 
 // Determine if running in development/demo mode
 export const isDevMode = () => {
@@ -24,36 +25,89 @@ const DEMO_USER = {
   id: "demo-user-id",
   name: "Demo User",
   email: "demo@example.com",
+  emailVerified: new Date(),
 };
 
 // Create a custom adapter that falls back to in‑memory storage if Prisma fails
-const createFallbackAdapter = () => {
+const createFallbackAdapter = (): Adapter => {
   try {
+    // Try to use Prisma adapter if database is available
     return PrismaAdapter(prisma);
   } catch (error) {
     console.warn("Failed to initialize Prisma adapter, using fallback memory adapter", error);
+    
+    // In-memory adapter as fallback
     const users = new Map();
     // Add demo user
     users.set(DEMO_USER.id, DEMO_USER);
+    
     return {
-      createUser: async (data: any) => {
+      createUser: async (data) => {
         const id = crypto.randomUUID();
         const user = { id, ...data };
         users.set(id, user);
         return user;
       },
-      getUser: async (id: string) => users.get(id) || null,
-      getUserByEmail: async (email: string) => {
+      getUser: async (id) => {
+        return users.get(id) || null;
+      },
+      getUserByEmail: async (email) => {
         if (email === DEMO_USER.email) return DEMO_USER;
         return Array.from(users.values()).find((user: any) => user.email === email) || null;
       },
-      getUserByAccount: async () => DEMO_USER,
-      updateUser: async (data: any) => data,
-      linkAccount: async (data: any) => data,
-      createSession: async (data: any) => data,
-      getSessionAndUser: async () => ({ session: {}, user: DEMO_USER }),
-      updateSession: async (data: any) => data,
-      deleteSession: async () => {},
+      getUserByAccount: async ({ providerAccountId, provider }) => {
+        // In demo mode, always return the demo user for simplicity
+        if (isDevMode()) return DEMO_USER;
+        return null;
+      },
+      updateUser: async (data) => {
+        const user = users.get(data.id);
+        if (!user) throw new Error("User not found");
+        const updatedUser = { ...user, ...data };
+        users.set(data.id, updatedUser);
+        return updatedUser;
+      },
+      deleteUser: async (userId) => {
+        const user = users.get(userId);
+        if (!user) throw new Error("User not found");
+        users.delete(userId);
+        return user;
+      },
+      linkAccount: async (data) => {
+        // Just return the data in mock mode
+        return data;
+      },
+      unlinkAccount: async ({ providerAccountId, provider }) => {
+        // No-op in mock mode
+      },
+      createSession: async (data) => {
+        return data;
+      },
+      getSessionAndUser: async (sessionToken) => {
+        if (isDevMode()) {
+          return {
+            user: DEMO_USER,
+            session: {
+              sessionToken,
+              userId: DEMO_USER.id,
+              expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            }
+          };
+        }
+        return null;
+      },
+      updateSession: async (data) => {
+        return data;
+      },
+      deleteSession: async (sessionToken) => {
+        // No-op in mock mode
+      },
+      createVerificationToken: async (data) => {
+        return data;
+      },
+      useVerificationToken: async (params) => {
+        return null;
+      }
     };
   }
 };
@@ -100,6 +154,7 @@ export const authOptions: NextAuthOptions = {
             id: user.id,
             name: user.name,
             email: user.email,
+            emailVerified: user.emailVerified,
           };
         } catch (error) {
           console.error("Authentication error:", error);
