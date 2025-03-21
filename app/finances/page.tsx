@@ -23,6 +23,7 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import ExpenseReminderForm from '@/src/components/finance/ExpenseReminderForm';
 
 export default function FinancesPage() {
   // Active tab state
@@ -362,6 +363,7 @@ export default function FinancesPage() {
           <TabsTrigger value="income" className="flex-1">収入管理</TabsTrigger>
           <TabsTrigger value="expenses" className="flex-1">支出管理</TabsTrigger>
           <TabsTrigger value="transactions" className="flex-1">取引履歴</TabsTrigger>
+          <TabsTrigger value="reminders" className="flex-1">リマインダー</TabsTrigger>
         </TabsList>
         
         <TabsContent value="calendar" className="mt-6">
@@ -1024,6 +1026,13 @@ export default function FinancesPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        {/* New reminder tab */}
+        <TabsContent value="reminders" className="mt-6">
+          <ExpenseReminderForm onCreated={() => {
+            // Additional logic when a reminder is created can be added here.
+          }} />
         </TabsContent>
       </Tabs>
     </div>

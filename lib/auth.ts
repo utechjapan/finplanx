@@ -6,11 +6,17 @@ import GitHubProvider from "next-auth/providers/github";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { compare, hash } from "bcrypt";
-import { sendWelcomeEmail, sendPasswordResetEmail, sendLoginNotificationEmail } from "@/lib/email";
+import {
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+  sendLoginNotificationEmail,
+  sendEmailVerificationEmail
+} from "@/lib/email";
+import crypto from "crypto";
 
 // Function to determine if running in development/demo mode
 export const isDevMode = () => {
-  return process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === "1";
+  return process.env.NODE_ENV !== "production" || process.env.DEMO_MODE === "1";
 };
 
 // Demo users for development and demo environments
@@ -45,59 +51,56 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
-        
+
         try {
           // In dev/demo mode, use demo users
           if (isDevMode()) {
-            console.log('Demo mode authentication attempt:', credentials.email);
-            
+            console.log("Demo mode authentication attempt:", credentials.email);
+
             // First check if it's one of our demo users
             const demoUser = demoUsers.find(
-              (user) => 
-                user.email === credentials.email && 
+              (user) =>
+                user.email === credentials.email &&
                 user.password === credentials.password
             );
-            
+
             if (demoUser) {
-              console.log('Demo user authenticated:', demoUser.email);
+              console.log("Demo user authenticated:", demoUser.email);
               return {
                 id: demoUser.id,
                 name: demoUser.name,
                 email: demoUser.email,
               };
             }
-            
+
             // Demo mode feature: In demo mode, allow any credentials to log in as demo user
             if (process.env.DEMO_MODE === "1") {
-              console.log('Creating demo session for user:', credentials.email);
+              console.log("Creating demo session for user:", credentials.email);
               return {
                 id: "demo-user-1",
                 name: "デモユーザー",
                 email: "demo@example.com",
               };
             }
-            
+
             return null;
           }
-          
+
           // Production mode - check database
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
           });
-          
+
           if (!user || !user.password) {
             return null;
           }
-          
-          const passwordMatch = await compare(
-            credentials.password,
-            user.password
-          );
-          
+
+          const passwordMatch = await compare(credentials.password, user.password);
+
           if (!passwordMatch) {
             return null;
           }
-          
+
           // Send login notification email (in production)
           if (!isDevMode()) {
             try {
@@ -107,7 +110,7 @@ export const authOptions: NextAuthOptions = {
               // Don't block login if email fails
             }
           }
-          
+
           return {
             id: user.id,
             name: user.name,
@@ -132,21 +135,21 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_SECRET || "",
     }),
   ],
-  
+
   pages: {
     signIn: "/login",
     signOut: "/",
     error: "/login",
     verifyRequest: "/verify-request",
   },
-  
+
   callbacks: {
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        
+
         // Store provider info if using OAuth
         if (account) {
           token.provider = account.provider;
@@ -154,7 +157,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    
+
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
@@ -164,14 +167,12 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
 
-    // Add additional callback to handle sign-in from OAuth providers in dev mode
+    // Additional callback to handle sign-in from OAuth providers in dev mode
     async signIn({ user, account, profile }) {
-      // In dev mode, always succeed OAuth sign-ins
-      if (isDevMode() && account && (account.provider === 'google' || account.provider === 'github')) {
+      if (isDevMode() && account && (account.provider === "google" || account.provider === "github")) {
         return true;
       }
 
-      // For production environments, handle the OAuth providers
       if (account && account.provider === "google") {
         // Custom logic for Google sign-in if needed
         return true;
@@ -183,9 +184,9 @@ export const authOptions: NextAuthOptions = {
       }
 
       return true;
-    }
+    },
   },
-  
+
   // Debug mode in development
   debug: process.env.NODE_ENV === "development",
 
@@ -203,17 +204,17 @@ export const authOptions: NextAuthOptions = {
 export async function registerUser(name: string, email: string, password: string) {
   // In demo mode, just return success without database operations
   if (isDevMode()) {
-    console.log('Demo mode: Simulating successful user registration for', email);
-    
+    console.log("Demo mode: Simulating successful user registration for", email);
+
     // Check if trying to register an existing demo user
-    const existingDemoUser = demoUsers.find(user => user.email === email);
+    const existingDemoUser = demoUsers.find((user) => user.email === email);
     if (existingDemoUser) {
-      return { 
-        success: false, 
-        error: "このメールアドレスは既に登録されています" 
+      return {
+        success: false,
+        error: "このメールアドレスは既に登録されています",
       };
     }
-    
+
     // In demo mode, always succeed with a new demo user
     return {
       success: true,
@@ -222,45 +223,49 @@ export async function registerUser(name: string, email: string, password: string
         name,
         email,
         createdAt: new Date(),
-      }
+      },
     };
   }
-  
+
   try {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
-    
+
     if (existingUser) {
-      return { 
-        success: false, 
-        error: "このメールアドレスは既に登録されています" 
+      return {
+        success: false,
+        error: "このメールアドレスは既に登録されています",
       };
     }
-    
+
     // Hash password
     const hashedPassword = await hash(password, 12);
-    
-    // Create user
+
+    // Generate verification token
+    const verificationToken = crypto.randomUUID();
+
+    // Create user with verification token
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        verificationToken,
       },
     });
-    
-    // Send welcome email (production only)
+
+    // Send verification email
     if (!isDevMode()) {
       try {
-        await sendWelcomeEmail(email, name);
+        await sendEmailVerificationEmail(email, name, verificationToken);
       } catch (emailError) {
-        console.error("Failed to send welcome email:", emailError);
+        console.error("Failed to send verification email:", emailError);
         // Don't block registration if email fails
       }
     }
-    
+
     return {
       success: true,
       user: {
@@ -268,13 +273,116 @@ export async function registerUser(name: string, email: string, password: string
         name: user.name,
         email: user.email,
         createdAt: user.createdAt,
-      }
+      },
+      message: "アカウントが作成されました。メールアドレスの確認を行ってください。",
     };
   } catch (error) {
     console.error("User registration error:", error);
-    return { 
-      success: false, 
-      error: "ユーザー登録中にエラーが発生しました" 
+    return {
+      success: false,
+      error: "ユーザー登録中にエラーが発生しました",
+    };
+  }
+}
+
+// Generate email verification token
+export async function generateEmailVerificationToken(email: string) {
+  if (isDevMode()) {
+    // In demo mode, just simulate token generation
+    return {
+      success: true,
+      token: "demo-verification-" + Date.now(),
+    };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return {
+        success: false,
+        error: "ユーザーが見つかりません",
+      };
+    }
+
+    // If already verified, no need to do it again
+    if (user.emailVerified) {
+      return {
+        success: true,
+        message: "メールアドレスは既に確認済みです",
+      };
+    }
+
+    // Generate a random token
+    const token = crypto.randomUUID();
+
+    // Store token in user record
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationToken: token,
+      },
+    });
+
+    // Send verification email
+    await sendEmailVerificationEmail(email, user.name, token);
+
+    return {
+      success: true,
+      message: "確認メールを送信しました",
+    };
+  } catch (error) {
+    console.error("Email verification token generation error:", error);
+    return {
+      success: false,
+      error: "確認メールの生成中にエラーが発生しました",
+    };
+  }
+}
+
+// Verify email with token
+export async function verifyEmail(token: string) {
+  if (isDevMode()) {
+    // In demo mode, just simulate verification
+    return {
+      success: true,
+      message: "メールアドレスが確認されました",
+    };
+  }
+
+  try {
+    // Find user with this verification token
+    const user = await prisma.user.findFirst({
+      where: {
+        verificationToken: token,
+      },
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        error: "無効または期限切れのトークンです",
+      };
+    }
+
+    // Mark email as verified
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: new Date(),
+        verificationToken: null,
+      },
+    });
+
+    return {
+      success: true,
+      message: "メールアドレスが正常に確認されました",
+    };
+  } catch (error) {
+    console.error("Email verification error:", error);
+    return {
+      success: false,
+      error: "メールアドレスの確認中にエラーが発生しました",
     };
   }
 }
@@ -285,25 +393,25 @@ export async function generatePasswordResetToken(email: string) {
     // In demo mode, just simulate token generation
     return {
       success: true,
-      token: "demo-token-" + Date.now()
+      token: "demo-token-" + Date.now(),
     };
   }
-  
+
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-    
+
     if (!user) {
       // We don't want to reveal if a user exists or not for security
       return {
         success: true,
-        message: "パスワードリセットリンクを送信しました（メールアドレスが登録されている場合）"
+        message: "パスワードリセットリンクを送信しました（メールアドレスが登録されている場合）",
       };
     }
-    
+
     // Generate a random token
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    
+
     // Store token in database
     await prisma.passwordReset.upsert({
       where: { userId: user.id },
@@ -315,22 +423,21 @@ export async function generatePasswordResetToken(email: string) {
         userId: user.id,
         token,
         expiresAt,
-      }
+      },
     });
-    
+
     // Send password reset email
     await sendPasswordResetEmail(email, user.name, token);
-    
+
     return {
       success: true,
-      message: "パスワードリセットリンクを送信しました"
+      message: "パスワードリセットリンクを送信しました",
     };
-    
   } catch (error) {
     console.error("Password reset token generation error:", error);
     return {
       success: false,
-      error: "パスワードリセットリンクの生成中にエラーが発生しました"
+      error: "パスワードリセットリンクの生成中にエラーが発生しました",
     };
   }
 }
@@ -341,51 +448,50 @@ export async function resetPassword(token: string, newPassword: string) {
     // In demo mode, just simulate password reset
     return {
       success: true,
-      message: "パスワードがリセットされました"
+      message: "パスワードがリセットされました",
     };
   }
-  
+
   try {
     // Find token in database
     const resetRecord = await prisma.passwordReset.findFirst({
       where: {
         token,
-        expiresAt: { gt: new Date() } // Token must not be expired
+        expiresAt: { gt: new Date() }, // Token must not be expired
       },
-      include: { user: true }
+      include: { user: true },
     });
-    
+
     if (!resetRecord) {
       return {
         success: false,
-        error: "無効または期限切れのトークンです"
+        error: "無効または期限切れのトークンです",
       };
     }
-    
+
     // Hash new password
     const hashedPassword = await hash(newPassword, 12);
-    
+
     // Update user password
     await prisma.user.update({
       where: { id: resetRecord.userId },
-      data: { password: hashedPassword }
+      data: { password: hashedPassword },
     });
-    
+
     // Delete the token
     await prisma.passwordReset.delete({
-      where: { id: resetRecord.id }
+      where: { id: resetRecord.id },
     });
-    
+
     return {
       success: true,
-      message: "パスワードが正常にリセットされました"
+      message: "パスワードが正常にリセットされました",
     };
-    
   } catch (error) {
     console.error("Password reset error:", error);
     return {
       success: false,
-      error: "パスワードのリセット中にエラーが発生しました"
+      error: "パスワードのリセット中にエラーが発生しました",
     };
   }
 }

@@ -1,4 +1,4 @@
-// lib/email.ts
+// lib/email.ts (update)
 import nodemailer from 'nodemailer';
 import { isDevMode } from './auth';
 
@@ -328,4 +328,76 @@ FinPlanXチーム
   // Send both emails
   await transporter.sendMail(mailOptions);
   return transporter.sendMail(confirmationMailOptions);
+}
+
+// Add this function
+
+// Send email verification email
+export async function sendEmailVerificationEmail(email: string, name: string, token: string) {
+  const transporter = getTransporter();
+  const verificationUrl = `${process.env.NEXTAUTH_URL || 'https://utechlab.net'}/verify-email?token=${token}`;
+  
+  const mailOptions = {
+    from: `"FinPlanX" <${process.env.EMAIL_FROM || 'noreply@finplanx-app.com'}>`,
+    to: email,
+    subject: 'FinPlanX - メールアドレスの確認',
+    text: `
+${name}様、
+
+FinPlanXへのユーザー登録ありがとうございます。
+以下のリンクをクリックして、メールアドレスを確認してください：
+
+${verificationUrl}
+
+このリンクは24時間有効です。
+
+このメールに心当たりがない場合は、無視してください。
+
+FinPlanXチーム
+    `,
+    html: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 5px;">
+  <div style="text-align: center; margin-bottom: 20px;">
+    <div style="background-color: #3b82f6; color: white; width: 50px; height: 50px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; margin: 0 auto;">F</div>
+    <h1 style="color: #3b82f6; margin-top: 10px;">FinPlanX</h1>
+  </div>
+  
+  <h2 style="color: #333;">メールアドレスの確認</h2>
+  
+  <p style="color: #666; line-height: 1.6;">
+    ${name}様、<br><br>
+    FinPlanXへのユーザー登録ありがとうございます。
+  </p>
+  
+  <p style="color: #666; line-height: 1.6;">
+    以下のボタンをクリックして、メールアドレスを確認してください。このリンクは24時間有効です。
+  </p>
+  
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="${verificationUrl}" style="background-color: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">メールアドレスを確認</a>
+  </div>
+  
+  <p style="color: #666; line-height: 1.6;">
+    上記のボタンが機能しない場合は、以下のURLをブラウザに貼り付けてください：<br>
+    <a href="${verificationUrl}" style="color: #3b82f6; word-break: break-all;">${verificationUrl}</a>
+  </p>
+  
+  <p style="color: #666; line-height: 1.6;">
+    このメールに心当たりがない場合は、このメールを無視してください。
+  </p>
+  
+  <p style="color: #666; line-height: 1.6; margin-top: 30px;">
+    よろしくお願いいたします。<br>
+    FinPlanXチーム
+  </p>
+  
+  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eaeaea; font-size: 12px; color: #999; text-align: center;">
+    このメールは自動送信されています。返信はできませんのでご了承ください。<br>
+    &copy; ${new Date().getFullYear()} FinPlanX. All rights reserved.
+  </div>
+</div>
+    `,
+  };
+  
+  return transporter.sendMail(mailOptions);
 }

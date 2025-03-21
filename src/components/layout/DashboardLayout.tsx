@@ -21,6 +21,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/Button';
 import { ThemeToggle } from '../ui/ThemeToggle';
+// Import the NotificationCenter
+import { NotificationCenter } from '../ui/NotificationCenter';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -42,7 +44,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Redirect if not authenticated
@@ -74,12 +75,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     name: session?.user?.name || 'ユーザー',
     email: session?.user?.email || 'user@example.com',
   };
-
-  // Sample notifications
-  const notifications = [
-    { id: 1, title: '家賃の支払い期限が近づいています', date: '1時間前', read: false },
-    { id: 2, title: '今月の予算を15%達成しました', date: '昨日', read: false },
-  ];
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/' });
@@ -262,70 +257,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               </h1>
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-3">
-              {/* Notifications button */}
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative"
-                  onClick={() => {
-                    setNotificationsOpen(!notificationsOpen);
-                    setUserMenuOpen(false);
-                  }}
-                >
-                  <Bell size={20} />
-                  {notifications.some((n) => !n.read) && (
-                    <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
-                  )}
-                </Button>
-                {/* Notifications dropdown */}
-                <AnimatePresence>
-                  {notificationsOpen && (
-                    <motion.div
-                      className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.1 }}
-                    >
-                      <div className="py-2 px-3 border-b border-gray-100 dark:border-gray-700">
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">お知らせ</h3>
-                      </div>
-                      <div className="max-h-60 overflow-y-auto">
-                        {notifications.length > 0 ? (
-                          notifications.map((notification) => (
-                            <div
-                              key={notification.id}
-                              className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                                !notification.read ? 'bg-blue-50 dark:bg-blue-900/30' : ''
-                              }`}
-                            >
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {notification.title}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {notification.date}
-                              </p>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                            お知らせはありません
-                          </div>
-                        )}
-                      </div>
-                      <div className="py-2 px-3 border-t border-gray-100 dark:border-gray-700 text-center">
-                        <Link
-                          href="#"
-                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
-                        >
-                          すべて見る
-                        </Link>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              {/* Notifications button replaced with NotificationCenter */}
+              <NotificationCenter />
               {/* User menu */}
               <div className="relative">
                 <Button
@@ -334,7 +267,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   className="flex items-center space-x-2"
                   onClick={() => {
                     setUserMenuOpen(!userMenuOpen);
-                    setNotificationsOpen(false);
                   }}
                 >
                   <span className="sr-only">ユーザーメニューを開く</span>

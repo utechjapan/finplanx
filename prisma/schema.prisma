@@ -1,4 +1,4 @@
-// prisma/schema.prisma
+// prisma/schema.prisma 
 
 datasource db {
   provider = "postgresql"
@@ -10,9 +10,9 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String
-  email         String    @unique
+  email         String         @unique
   password      String
   accounts      Account[]
   budgets       Budget[]
@@ -22,8 +22,11 @@ model User {
   lifeEvents    LifeEvent[]
   debts         Debt[]
   investments   Investment[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  notifications Notification[] // <-- Added notifications relation
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  emailVerified  DateTime?
+  verificationToken String?
 }
 
 model Account {
@@ -78,16 +81,16 @@ model Income {
 }
 
 model Goal {
-  id          String   @id @default(cuid())
-  name        String
-  targetAmount Float
-  currentAmount Float   @default(0)
-  startDate   DateTime
-  targetDate  DateTime
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  startDate     DateTime
+  targetDate    DateTime
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model LifeEvent {
@@ -103,7 +106,7 @@ model LifeEvent {
 }
 
 model Debt {
-  id              String   @id @default(cuid())
+  id              String        @id @default(cuid())
   name            String
   totalAmount     Float
   remainingAmount Float
@@ -111,45 +114,59 @@ model Debt {
   minimumPayment  Float
   startDate       DateTime
   endDate         DateTime?
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
   payments        DebtPayment[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 model DebtPayment {
-  id          String   @id @default(cuid())
-  amount      Float
-  date        DateTime
-  debt        Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
-  debtId      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  amount    Float
+  date      DateTime
+  debt      Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  debtId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Investment {
-  id          String   @id @default(cuid())
-  name        String
-  type        String   // stock, bond, real estate, etc.
-  amount      Float
-  returnRate  Float
-  startDate   DateTime
-  endDate     DateTime?
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
+  id           String                     @id @default(cuid())
+  name         String
+  type         String                     // stock, bond, real estate, etc.
+  amount       Float
+  returnRate   Float
+  startDate    DateTime
+  endDate      DateTime?
+  user         User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
   transactions InvestmentTransaction[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
 }
 
 model InvestmentTransaction {
-  id            String    @id @default(cuid())
-  amount        Float
-  type          String    // buy, sell, dividend
-  date          DateTime
-  investment    Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
-  investmentId  String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String       @id @default(cuid())
+  amount       Float
+  type         String       // buy, sell, dividend
+  date         DateTime
+  investment Investment   @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  investmentId String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+// Added Notification model
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  title      String
+  message    String
+  type       String   // "expense_reminder", "system", etc.
+  targetDate DateTime?
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

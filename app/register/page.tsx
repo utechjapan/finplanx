@@ -70,27 +70,13 @@ export default function RegisterPage() {
       }
       
       // Registration successful
-      setSuccess('アカウントが作成されました！ログインしています...');
+      setSuccess(
+        result.message ||
+        'アカウントが作成されました！確認メールを送信しました。メールボックスを確認してください。'
+      );
       
-      // Auto-login the user
-      setTimeout(async () => {
-        const signInResult = await signIn('credentials', {
-          redirect: false,
-          email: data.email,
-          password: data.password,
-        });
-        
-        if (signInResult?.error) {
-          setError('ログインに失敗しました。ログインページからログインしてください。');
-          setIsLoading(false);
-          setTimeout(() => {
-            router.push('/login');
-          }, 2000);
-        } else {
-          // Successful login - force redirect to dashboard
-          window.location.href = '/dashboard';
-        }
-      }, 1500);
+      // Do not auto-login after registration - require email verification instead.
+      setIsLoading(false);
       
     } catch (error) {
       console.error('Registration error:', error);
