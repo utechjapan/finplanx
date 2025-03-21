@@ -1,4 +1,4 @@
-// lib/auth.ts
+// lib/auth.ts - 改善された認証システム
 
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -15,19 +15,26 @@ import {
 } from "@/lib/email";
 import crypto from "crypto";
 
-// Determine if running in development mode
+// デモモードかどうかを判定する関数
 export const isDevMode = () => {
-  // In production, always return false
+  // 明示的に設定されている場合はその値を使用
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+    return true;
+  }
+  
+  // 本番環境では常にfalse
   if (process.env.NODE_ENV === "production") {
     return false;
   }
-  return process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+  
+  // 開発環境ではデフォルトでtrue
+  return true;
 };
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    // Credentials Provider
+    // 資格情報プロバイダー
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -44,16 +51,28 @@ export const authOptions: NextAuthOptions = {
           
           if (!user || !user.password) return null;
           
+          // デモモードの場合、特別なログインを許可
+          if (isDevMode() && credentials.email === 'demo@example.com' && credentials.password === 'password123') {
+            return {
+              id: 'demo-user',
+              name: 'デモユーザー',
+              email: 'demo@example.com',
+              emailVerified: new Date(),
+            };
+          }
+          
+          // パスワードの比較
           const passwordMatch = await compare(credentials.password, user.password);
           if (!passwordMatch) return null;
 
           try {
-            // Only send email notifications in production mode
+            // 本番環境の場合のみログイン通知メールを送信
             if (!isDevMode()) {
               await sendLoginNotificationEmail(user.email!, user.name || "Unknown User");
             }
           } catch (emailError) {
             console.error("Failed to send login notification email:", emailError);
+            // メール送信失敗でもログインは許可
           }
 
           return {
@@ -69,6 +88,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
 
+    // OAuth プロバイダー
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
@@ -106,17 +126,23 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account, profile }) {
-      // Always allow OAuth sign-ins
+      // OAuth サインインは常に許可
       if (account?.provider === 'google' || account?.provider === 'github') {
         return true;
       }
       
-      // For credentials, ensure email is verified in production
+      // 資格情報プロバイダーの場合、メール確認を確認
       if (account?.provider === 'credentials') {
-        // In production, ensure email is verified
+        // デモモードの場合は常に許可
+        if (isDevMode()) {
+          return true;
+        }
+        
+        // 本番環境では、メール確認が必要
         if (process.env.NODE_ENV === 'production') {
           return user.emailVerified != null;
         }
+        
         return true;
       }
       
@@ -128,16 +154,16 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30日
   },
 
   secret: process.env.NEXTAUTH_SECRET || "development-secret-key",
 };
 
-// Helper function for user registration
+// ユーザー登録ヘルパー関数
 export async function registerUser(name: string, email: string, password: string) {
   try {
-    // Check for existing user
+    // 既存ユーザーの確認
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return { success: false, error: "このメールアドレスは既に登録されています" };
@@ -156,10 +182,19 @@ export async function registerUser(name: string, email: string, password: string
     });
 
     try {
-      await sendEmailVerificationEmail(email, name, verificationToken);
+      // デモモードでなければメール確認を送信
+      if (!isDevMode()) {
+        await sendEmailVerificationEmail(email, name, verificationToken);
+      } else {
+        // デモモードでは自動的にメールを確認済みにする
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerified: new Date() }
+        });
+      }
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError);
-      // Don't fail registration if email fails - but log the error
+      // メール送信失敗でも登録は成功とする
     }
 
     return {
@@ -178,7 +213,7 @@ export async function registerUser(name: string, email: string, password: string
   }
 }
 
-// Updated email verification token generation with improved error handling
+// メール確認トークン再生成関数
 export async function generateEmailVerificationTokenForResend(email: string) {
   try {
     const user = await prisma.user.findUnique({ where: { email } });
@@ -188,6 +223,7 @@ export async function generateEmailVerificationTokenForResend(email: string) {
     if (user.emailVerified) {
       return { success: true, message: "メールアドレスは既に確認済みです" };
     }
+    
     const token = crypto.randomUUID();
     await prisma.user.update({ where: { id: user.id }, data: { verificationToken: token } });
     
@@ -204,7 +240,7 @@ export async function generateEmailVerificationTokenForResend(email: string) {
   }
 }
 
-// Updated verify email function with improved error handling and retry logic
+// メール確認関数
 export async function verifyEmail(token: string) {
   try {
     const user = await prisma.user.findFirst({ where: { verificationToken: token } });
@@ -218,7 +254,7 @@ export async function verifyEmail(token: string) {
         data: { emailVerified: new Date(), verificationToken: null },
       });
       
-      // Send welcome email after verification
+      // 確認後にウェルカムメールを送信
       try {
         await sendWelcomeEmail(user.email!, user.name || "User");
       } catch (emailError) {
@@ -236,10 +272,10 @@ export async function verifyEmail(token: string) {
   }
 }
 
-// Improved password reset functionality
+// パスワードリセットトークン生成関数
 export async function generatePasswordResetToken(email: string) {
   try {
-    // For security, always return success even if user not found
+    // セキュリティのため、ユーザーが見つからなくても成功を返す
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       console.log(`Password reset requested for non-existent user: ${email}`);
@@ -247,16 +283,21 @@ export async function generatePasswordResetToken(email: string) {
     }
     
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24時間
     
     try {
+      // 既存のトークンがあれば更新、なければ作成
       await prisma.passwordReset.upsert({
         where: { userId: user.id },
         update: { token, expiresAt },
         create: { userId: user.id, token, expiresAt },
       });
       
-      await sendPasswordResetEmail(email, user.name || "Unknown", token);
+      // デモモードでなければメールを送信
+      if (!isDevMode()) {
+        await sendPasswordResetEmail(email, user.name || "Unknown", token);
+      }
+      
       return { success: true, message: "パスワードリセットリンクを送信しました" };
     } catch (dbError) {
       console.error("Database error during password reset:", dbError);
@@ -268,7 +309,7 @@ export async function generatePasswordResetToken(email: string) {
   }
 }
 
-// Improved password reset with token
+// パスワードリセット関数
 export async function resetPassword(token: string, newPassword: string) {
   try {
     const resetRecord = await prisma.passwordReset.findFirst({

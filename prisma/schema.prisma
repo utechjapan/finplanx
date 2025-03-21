@@ -1,5 +1,14 @@
-// File: prisma/schema.prisma
-// Updates to Prisma schema to add notification functionality
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
 
 model User {
   id                String          @id @default(cuid())
@@ -21,6 +30,7 @@ model User {
   investments       Investment[]
   budgets           Budget[]
   goals             Goal[]
+  passwordResets    PasswordReset[]
 }
 
 model Account {
@@ -61,12 +71,14 @@ model VerificationToken {
 
 model PasswordReset {
   id        String   @id @default(cuid())
-  userId    String   @unique
+  userId    String
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
 }
 
 model Notification {
@@ -131,24 +143,24 @@ model Transaction {
 }
 
 model Debt {
-  id           String   @id @default(cuid())
-  userId       String
-  name         String
-  totalAmount  Float
+  id             String    @id @default(cuid())
+  userId         String
+  name           String
+  totalAmount    Float
   remainingAmount Float
-  interestRate Float
-  startDate    DateTime
-  endDate      DateTime?
+  interestRate   Float
+  startDate      DateTime
+  endDate        DateTime?
   minimumPayment Float
-  category     String
-  description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       String
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Investment {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   name        String
   amount      Float
@@ -158,13 +170,13 @@ model Investment {
   endDate     DateTime?
   returnRate  Float?
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Budget {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
   name        String
   amount      Float
@@ -172,22 +184,22 @@ model Budget {
   startDate   DateTime
   endDate     DateTime?
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Goal {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
   targetAmount Float
   currentAmount Float
-  category    String
-  startDate   DateTime
-  targetDate  DateTime
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     String
+  startDate    DateTime
+  targetDate   DateTime
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
