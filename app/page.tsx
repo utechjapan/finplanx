@@ -1,8 +1,7 @@
-// app/page.tsx
+// app/page.tsx - Fixed for App Router compatibility
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -76,6 +75,15 @@ export default function Home() {
     }
   ];
 
+  const handleDemoLogin = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    await signIn('credentials', {
+      email: 'demo@example.com',
+      password: 'password123',
+      callbackUrl: '/dashboard'
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -125,16 +133,9 @@ export default function Home() {
                 </p>
                 <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                   <Link 
-                    href="/demo" 
+                    href="#" 
                     className="px-8 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-center"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      signIn('credentials', {
-                        email: 'demo@example.com',
-                        password: 'password123',
-                        callbackUrl: '/dashboard'
-                      });
-                    }}
+                    onClick={handleDemoLogin}
                   >
                     無料でシミュレーション
                   </Link>
@@ -348,16 +349,9 @@ export default function Home() {
                   無料で登録する
                 </Link>
                 <Link 
-                  href="/demo" 
+                  href="#" 
                   className="px-8 py-3 border border-white text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-900 transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    signIn('credentials', {
-                      email: 'demo@example.com',
-                      password: 'password123',
-                      callbackUrl: '/dashboard'
-                    });
-                  }}
+                  onClick={handleDemoLogin}
                 >
                   デモを試す
                 </Link>
