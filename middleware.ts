@@ -10,7 +10,9 @@ const publicPaths = [
   '/register',
   '/forgot-password',
   '/reset-password',
-  '/demo',
+  '/verify-email',
+  '/verify-email-success',
+  '/verify-email-error',
   '/api/auth',
   '/api/register',
   '/api/password-reset',
@@ -65,9 +67,16 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Apply middleware only to these paths
+// Apply middleware to protected paths only
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/dashboard/:path*',
+    '/finances/:path*',
+    '/life-plan/:path*',
+    '/debt-repayment/:path*',
+    '/investments/:path*',
+    '/reports/:path*',
+    '/profile/:path*',
+    '/settings/:path*',
   ],
 };
