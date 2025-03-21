@@ -4,31 +4,10 @@
   "framework": "nextjs",
   "devCommand": "npm run dev",
   "outputDirectory": ".next",
-  "ignoreCommand": "echo 'Ignoring yarn check --integrity'",
-  "regions": ["iad1"],
-  "headers": [
+  "rewrites": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
-      ]
+      "source": "/((?!api/auth).*)",
+      "destination": "/"
     }
-  ],
-  "env": {
-    "NEXT_PUBLIC_DEMO_MODE": "true",
-    "NODE_ENV": "production",
-    "NEXTAUTH_URL": "https://www.utechlab.net",
-    "DATABASE_URL": "postgresql://dummy:dummy@localhost:5432/dummy"
-  }
+  ]
 }
