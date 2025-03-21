@@ -1,4 +1,6 @@
-// lib/auth.ts
+// File: lib/auth.ts
+// Updates to the authentication system to improve reliability and security
+
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -20,15 +22,6 @@ export const isDevMode = () => {
   return process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV !== "production";
 };
 
-// Mock user for demo mode with all required properties
-const DEMO_USER = {
-  id: "demo-user-id",
-  name: "Demo User",
-  email: "demo@example.com",
-  emailVerified: new Date(),
-  createdAt: new Date(),
-};
-
 // Create a robust fallback adapter that works without a database
 const createFallbackAdapter = () => {
   // Try to use the PrismaAdapter by default for production use
@@ -40,6 +33,15 @@ const createFallbackAdapter = () => {
     return PrismaAdapter(prisma);
   } catch (error) {
     console.warn("Using fallback memory adapter:", error instanceof Error ? error.message : String(error));
+    
+    // Mock user for demo mode with all required properties
+    const DEMO_USER = {
+      id: "demo-user-id",
+      name: "Demo User",
+      email: "demo@example.com",
+      emailVerified: new Date(),
+      createdAt: new Date(),
+    };
     
     // In-memory adapter fallback with proper User structure
     const users = new Map();
@@ -201,7 +203,12 @@ export const authOptions: NextAuthOptions = {
 
         // Special case for demo login
         if (isDevMode() && credentials.email === "demo@example.com") {
-          return DEMO_USER;
+          return {
+            id: "demo-user-id",
+            name: "Demo User",
+            email: "demo@example.com",
+            emailVerified: new Date(),
+          };
         }
         
         try {
@@ -289,6 +296,17 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async signIn({ user, account, profile }) {
+      // Ensure email verification for credential sign-ins
+      if (account?.provider === 'credentials') {
+        // Allow unverified emails in dev/demo mode
+        if (isDevMode()) {
+          return true;
+        }
+        
+        // In production, ensure email is verified
+        return user.emailVerified != null;
+      }
+      
       return true;
     },
   },
@@ -297,7 +315,7 @@ export const authOptions: NextAuthOptions = {
 
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
   secret: process.env.NEXTAUTH_SECRET || "development-secret-key",
@@ -345,6 +363,7 @@ export async function registerUser(name: string, email: string, password: string
       await sendEmailVerificationEmail(email, name, verificationToken);
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError);
+      // Don't fail registration if email fails - but log the error
     }
 
     return {
@@ -404,6 +423,12 @@ export async function verifyEmail(token: string) {
       where: { id: user.id },
       data: { emailVerified: new Date(), verificationToken: null },
     });
+    // Send welcome email after verification
+    try {
+      await sendWelcomeEmail(user.email!, user.name || "User");
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
+    }
     return { success: true, message: "メールアドレスが正常に確認されました" };
   } catch (error) {
     console.error("Email verification error:", error);
@@ -419,17 +444,21 @@ export async function generatePasswordResetToken(email: string) {
       return { success: true, message: "パスワードリセットリンクを送信しました" };
     }
 
+    // For security, always return success even if user not found
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return { success: true, message: "パスワードリセットリンクを送信しました（メールアドレスが登録されている場合）" };
     }
+    
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
     await prisma.passwordReset.upsert({
       where: { userId: user.id },
       update: { token, expiresAt },
       create: { userId: user.id, token, expiresAt },
     });
+    
     await sendPasswordResetEmail(email, user.name || "Unknown", token);
     return { success: true, message: "パスワードリセットリンクを送信しました" };
   } catch (error) {
@@ -450,18 +479,47 @@ export async function resetPassword(token: string, newPassword: string) {
       where: { token, expiresAt: { gt: new Date() } },
       include: { user: true },
     });
+    
     if (!resetRecord) {
       return { success: false, error: "無効または期限切れのトークンです" };
     }
+    
     const hashedPassword = await hash(newPassword, 12);
+    
     await prisma.user.update({
       where: { id: resetRecord.userId },
       data: { password: hashedPassword },
     });
+    
     await prisma.passwordReset.delete({ where: { id: resetRecord.id } });
+    
     return { success: true, message: "パスワードが正常にリセットされました" };
   } catch (error) {
     console.error("Password reset error:", error);
     return { success: false, error: "パスワードのリセット中にエラーが発生しました" };
+  }
+}
+
+// Helper function to validate a password reset token
+export async function validatePasswordResetToken(token: string) {
+  try {
+    // In demo mode, always valid
+    if (isDevMode()) {
+      return { valid: true, email: "demo@example.com" };
+    }
+
+    const resetRecord = await prisma.passwordReset.findFirst({
+      where: { token, expiresAt: { gt: new Date() } },
+      include: { user: true },
+    });
+    
+    if (!resetRecord || !resetRecord.user.email) {
+      return { valid: false };
+    }
+    
+    return { valid: true, email: resetRecord.user.email };
+  } catch (error) {
+    console.error("Token validation error:", error);
+    return { valid: false };
   }
 }

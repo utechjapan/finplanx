@@ -1,6 +1,9 @@
-// middleware.ts
+// File: middleware.ts
+// Enhanced middleware with better authentication flow and error handling
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
 // Public paths that don't require authentication
 const publicPaths = [
@@ -19,50 +22,88 @@ const publicPaths = [
   '/verify-email',
   '/verify-email-success',
   '/verify-email-error',
+  '/api/password-reset',
+  '/api/verify-email',
+  '/api/contact',
+  '/api/demo-login',
 ];
+
+// Static file extensions to ignore
+const staticFileExtensions = [
+  '.jpg', '.jpeg', '.png', '.gif', '.ico', '.svg',
+  '.css', '.js', '.woff', '.woff2', '.ttf', '.eot'
+];
+
+// Check if a path is for a static file
+const isStaticFile = (path: string): boolean => {
+  return staticFileExtensions.some(ext => path.endsWith(ext));
+};
+
+// Check if a path is in the public paths list or starts with any of them
+const isPublicPath = (path: string): boolean => {
+  return publicPaths.some(publicPath => 
+    path === publicPath || path.startsWith(`${publicPath}/`)
+  );
+};
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Always allow all access in development or if demo mode is enabled
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV !== 'production') {
+  // Skip middleware for static files
+  if (isStaticFile(pathname)) {
     return NextResponse.next();
   }
   
-  // Check if path is public
-  for (const path of publicPaths) {
-    if (pathname === path || pathname.startsWith(`${path}/`)) {
-      return NextResponse.next();
+  // Always allow demo mode in development
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+    return NextResponse.next();
+  }
+  
+  // Check for demo cookie
+  const hasDemoCookie = request.cookies.has('demo_mode');
+  if (hasDemoCookie) {
+    console.log('[Middleware] Demo cookie detected: allowing access');
+    return NextResponse.next();
+  }
+  
+  // Allow access to public paths
+  if (isPublicPath(pathname)) {
+    return NextResponse.next();
+  }
+  
+  // Allow all API routes except those that require authentication
+  if (pathname.startsWith('/api/') && 
+      !pathname.startsWith('/api/notifications') && 
+      !pathname.startsWith('/api/user')) {
+    return NextResponse.next();
+  }
+  
+  // Get authentication token
+  try {
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    
+    // If not authenticated, redirect to login
+    if (!token) {
+      console.log(`[Middleware] No token found, redirecting to login from ${pathname}`);
+      const url = new URL('/login', request.url);
+      url.searchParams.set('callbackUrl', encodeURI(pathname));
+      return NextResponse.redirect(url);
     }
-  }
-  
-  // Always allow access to API routes
-  if (pathname.startsWith('/api/')) {
+    
+    // User is authenticated, allow access
     return NextResponse.next();
-  }
-  
-  // Skip auth for static files
-  if (pathname.includes('.')) {
-    return NextResponse.next();
-  }
-
-  // Check for session cookie
-  const hasSessionToken = request.cookies.has('next-auth.session-token') || 
-                          request.cookies.has('__Secure-next-auth.session-token');
-  
-  // Redirect to login if no session token
-  if (!hasSessionToken) {
+  } catch (error) {
+    console.error('[Middleware] Error checking authentication:', error);
+    // On error, redirect to login as a fallback
     const url = new URL('/login', request.url);
-    url.searchParams.set('callbackUrl', encodeURI(pathname));
     return NextResponse.redirect(url);
   }
-  
-  // User has session token, allow access
-  return NextResponse.next();
 }
 
+// Configure paths that require middleware
 export const config = {
   matcher: [
+    // Protected routes
     '/dashboard/:path*',
     '/finances/:path*',
     '/life-plan/:path*',
@@ -70,6 +111,9 @@ export const config = {
     '/investments/:path*',
     '/reports/:path*',
     '/profile/:path*',
-    '/settings/:path*'
+    '/settings/:path*',
+    // Protected API routes
+    '/api/notifications/:path*',
+    '/api/user/:path*'
   ],
 };

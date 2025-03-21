@@ -1,9 +1,16 @@
-// lib/prisma.ts
+// File: lib/prisma.ts
+// Enhanced database connection with better error handling and retry logic
+
 import { PrismaClient } from '@prisma/client';
 
 declare global {
   var prisma: PrismaClient | undefined;
 }
+
+// Maximum number of connection retries
+const MAX_RETRIES = 3;
+// Backoff time in milliseconds
+const BACKOFF_TIME = 1000;
 
 // Create a new PrismaClient instance with better error handling
 const createPrismaClient = () => {
@@ -16,16 +23,13 @@ const createPrismaClient = () => {
 
     const client = new PrismaClient({
       // Add logging in development
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      log: process.env.NODE_ENV === 'development' 
+        ? ['query', 'error', 'warn'] 
+        : ['error'],
     });
     
-    // Test the connection
-    client.$connect()
-      .then(() => console.log('Database connected successfully'))
-      .catch(e => {
-        console.error('Failed to connect to database:', e);
-        console.warn('Running with mock database client');
-      });
+    // Test the connection with retry logic
+    connectWithRetry(client, 0);
     
     return client;
   } catch (e) {
@@ -35,17 +39,54 @@ const createPrismaClient = () => {
   }
 };
 
+// Function to attempt database connection with retry logic
+const connectWithRetry = async (client: PrismaClient, retryCount: number) => {
+  try {
+    await client.$connect();
+    console.log('Database connected successfully');
+  } catch (e) {
+    if (retryCount < MAX_RETRIES) {
+      const nextRetryCount = retryCount + 1;
+      const delay = BACKOFF_TIME * Math.pow(2, retryCount);
+      
+      console.error(
+        `Failed to connect to database (attempt ${nextRetryCount}/${MAX_RETRIES}). Retrying in ${delay}ms...`,
+        e
+      );
+      
+      setTimeout(() => connectWithRetry(client, nextRetryCount), delay);
+    } else {
+      console.error('Failed to connect to database after maximum retries:', e);
+      console.warn('Running with mock database client');
+    }
+  }
+};
+
 // Create a mock client for demo mode or when DB connection fails
 const createMockClient = () => {
   return new Proxy({} as PrismaClient, {
     get: (target, prop) => {
       // For tables, return a proxy for their methods
-      if (['user', 'account', 'session', 'notification', 'passwordReset'].includes(prop as string)) {
+      if ([
+        'user', 
+        'account', 
+        'session', 
+        'notification', 
+        'passwordReset', 
+        'expense',
+        'income',
+        'transaction',
+        'debt',
+        'investment',
+        'budget',
+        'goal'
+      ].includes(prop as string)) {
         return new Proxy({}, {
           get: (_, method) => {
             // Return a function for all methods
-            return (...args: any[]) => {
-              console.log(`Mock Prisma client called: ${String(prop)}.${String(method)}`, args);
+            return async (...args: any[]) => {
+              console.log(`Mock Prisma client called: ${String(prop)}.${String(method)}`, 
+                process.env.NODE_ENV === 'development' ? args : '[args hidden in production]');
               
               // Return appropriate values based on method
               if (method === 'findUnique' || method === 'findFirst') {
@@ -63,6 +104,8 @@ const createMockClient = () => {
                 });
               } else if (method === 'delete') {
                 return Promise.resolve({ id: args[0]?.where?.id || 'deleted-id' });
+              } else if (method === 'count') {
+                return Promise.resolve(0);
               } else {
                 return Promise.resolve(null);
               }
@@ -102,7 +145,7 @@ if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_MODE 
   }
   prisma = global.prisma;
 } else {
-  // In production, create a new client
+  // In production, create a new client with connection pool
   prisma = createPrismaClient();
 }
 
