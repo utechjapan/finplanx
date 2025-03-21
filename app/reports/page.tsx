@@ -81,12 +81,16 @@ export default function ReportsPage() {
     alert('CSVとしてエクスポート（実際の実装ではCSVをダウンロードします）');
   };
 
-  const formatTooltipValue = (value, name) => {
-    if (name === '貯蓄率') {
-      return `${typeof value === 'number' ? value.toFixed(1) : value}%`;
-    }
-    return `¥${typeof value === 'number' ? value.toLocaleString() : value}`;
-  };
+  interface TooltipValueFormatter {
+    (value: number | string, name: string): string;
+  }
+
+  const formatTooltipValue: TooltipValueFormatter = (value, name) => {
+      if (name === '貯蓄率') {
+        return `${typeof value === 'number' ? value.toFixed(1) : parseFloat(value as string).toFixed(1)}%`;
+      }
+      return `¥${typeof value === 'number' ? value.toLocaleString() : parseFloat(value as string).toLocaleString()}`;
+    };
 
   return (
     <div className="space-y-6">
@@ -284,7 +288,7 @@ export default function ReportsPage() {
                         domain={[0, 100]}
                         tickFormatter={(tick) => `${tick}%`}
                       />
-                      <Tooltip formatter={(value, name) => formatTooltipValue(value, name)} />
+                      <Tooltip formatter={(value: string | number, name: string) => formatTooltipValue(value, name)} />
                       <Legend />
                       <Bar dataKey="totalIncome" name="総収入" yAxisId="left" fill="#8884d8" />
                       <Bar dataKey="totalExpenses" name="総支出" yAxisId="left" fill="#ff7f7f" />
