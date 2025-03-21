@@ -46,7 +46,7 @@ const expenseCategories = [
   { name: 'その他', value: 45000, color: '#ffc658' }
 ];
 
-const DashboardPage = () => {
+export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">ダッシュボード</h1>
@@ -58,7 +58,7 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">¥320,000</div>
-            <p className="text-sm text-gray-500 mt-2">前月比: +6.7%</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">前月比: +6.7%</p>
           </CardContent>
         </Card>
         
@@ -68,7 +68,7 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">¥235,000</div>
-            <p className="text-sm text-gray-500 mt-2">前月比: +4.4%</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">前月比: +4.4%</p>
           </CardContent>
         </Card>
         
@@ -78,7 +78,7 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">¥85,000</div>
-            <p className="text-sm text-gray-500 mt-2">前月比: +13.3%</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">前月比: +13.3%</p>
           </CardContent>
         </Card>
       </div>
@@ -169,33 +169,33 @@ const DashboardPage = () => {
           </CardHeader>
           <CardContent>
             <ul className="space-y-4">
-              <li className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <li className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div>
                   <h3 className="font-medium">夏季ボーナス</h3>
-                  <p className="text-sm text-gray-500">2025年6月</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">2025年6月</p>
                 </div>
-                <span className="text-green-600 font-medium">+¥380,000</span>
+                <span className="text-green-600 dark:text-green-400 font-medium">+¥380,000</span>
               </li>
-              <li className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <li className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div>
                   <h3 className="font-medium">国内旅行</h3>
-                  <p className="text-sm text-gray-500">2025年9月</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">2025年9月</p>
                 </div>
-                <span className="text-red-600 font-medium">-¥80,000</span>
+                <span className="text-red-600 dark:text-red-400 font-medium">-¥80,000</span>
               </li>
-              <li className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <li className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div>
                   <h3 className="font-medium">国内旅行</h3>
-                  <p className="text-sm text-gray-500">2025年12月</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">2025年12月</p>
                 </div>
-                <span className="text-red-600 font-medium">-¥80,000</span>
+                <span className="text-red-600 dark:text-red-400 font-medium">-¥80,000</span>
               </li>
-              <li className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <li className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div>
                   <h3 className="font-medium">フィリピン旅行</h3>
-                  <p className="text-sm text-gray-500">2027年1月</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">2027年1月</p>
                 </div>
-                <span className="text-red-600 font-medium">-¥200,000</span>
+                <span className="text-red-600 dark:text-red-400 font-medium">-¥200,000</span>
               </li>
             </ul>
           </CardContent>
@@ -203,6 +203,4 @@ const DashboardPage = () => {
       </div>
     </div>
   );
-};
-
-export default DashboardPage;
+}
