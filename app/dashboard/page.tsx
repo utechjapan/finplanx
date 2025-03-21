@@ -1,16 +1,16 @@
 // app/dashboard/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Select } from '@/src/components/ui/Select';
 import { DatePicker } from '@/src/components/ui/DatePicker';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 export default function DashboardPage() {
-  // User financial data
+  // User financial data with safe initial values
   const [userData, setUserData] = useState({
     income: {
       baseSalary: 0,
@@ -21,12 +21,13 @@ export default function DashboardPage() {
     savings: 0,
   });
   
-  // Form input states
+  // Form input states with string type for controlled inputs
   const [incomeInput, setIncomeInput] = useState({
     baseSalary: '',
     overtime: '',
     allowances: '',
   });
+  
   const [expenseInput, setExpenseInput] = useState({
     category: '食費',
     amount: '',
@@ -44,42 +45,49 @@ export default function DashboardPage() {
   // Colors for pie chart
   const COLORS = ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d', '#a4de6c', '#ffc658', '#ff8042'];
   
-  // Handle income update
+  // Handle income update with improved validation
   const handleIncomeUpdate = (field: string) => {
     const value = parseFloat(incomeInput[field as keyof typeof incomeInput]);
     if (!isNaN(value) && value >= 0) {
-      setUserData({
-        ...userData,
+      // Update the income field
+      setUserData(prevData => ({
+        ...prevData,
         income: {
-          ...userData.income,
+          ...prevData.income,
           [field]: value,
         }
-      });
-      
-      // Recalculate totals
-      const totalIncome = calculateTotalIncome({
-        ...userData.income,
-        [field]: value,
-      });
-      
-      const totalExpenses = userData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
-      const newSavings = totalIncome - totalExpenses;
-      
-      setUserData(prev => ({
-        ...prev,
-        savings: newSavings
       }));
       
-      // Update monthly data
-      setMonthlyData([
-        { month: '今月', income: totalIncome, expenses: totalExpenses, savings: newSavings }
-      ]);
-      
-      setIncomeInput({
-        ...incomeInput,
+      // Clear the input field after successful update
+      setIncomeInput(prev => ({
+        ...prev,
         [field]: '',
-      });
+      }));
+      
+      // Recalculate totals and update everything else
+      setTimeout(() => updateFinancialSummary(), 0);
     }
+  };
+  
+  // Update financial summary after changes
+  const updateFinancialSummary = () => {
+    // Recalculate totals
+    const totalIncome = calculateTotalIncome(userData.income);
+    const totalExpenses = userData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const newSavings = totalIncome - totalExpenses;
+    
+    setUserData(prev => ({
+      ...prev,
+      savings: newSavings
+    }));
+    
+    // Update monthly data
+    setMonthlyData([
+      { month: '今月', income: totalIncome, expenses: totalExpenses, savings: newSavings }
+    ]);
+    
+    // Update expense categories visualization
+    updateExpenseCategories();
   };
   
   // Calculate total income from all sources
@@ -87,7 +95,7 @@ export default function DashboardPage() {
     return income.baseSalary + income.overtime + income.allowances;
   };
   
-  // Add new expense
+  // Add new expense with improved validation
   const handleAddExpense = () => {
     const amount = parseFloat(expenseInput.amount);
     if (!isNaN(amount) && amount > 0 && expenseInput.category) {
@@ -98,99 +106,92 @@ export default function DashboardPage() {
         description: expenseInput.description,
       };
       
-      const updatedExpenses = [...userData.expenses, newExpense];
+      // Add the new expense
+      setUserData(prevData => ({
+        ...prevData,
+        expenses: [...prevData.expenses, newExpense]
+      }));
       
-      // Recalculate totals
-      const totalIncome = calculateTotalIncome(userData.income);
-      const totalExpenses = updatedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-      const newSavings = totalIncome - totalExpenses;
-      
-      setUserData({
-        ...userData,
-        expenses: updatedExpenses,
-        savings: newSavings
-      });
-      
-      // Update monthly data
-      setMonthlyData([
-        { month: '今月', income: totalIncome, expenses: totalExpenses, savings: newSavings }
-      ]);
-      
-      // Update expense categories for visualization
-      const categories: Record<string, {value: number, color: string}> = {};
-      
-      updatedExpenses.forEach((expense, index) => {
-        if (categories[expense.category]) {
-          categories[expense.category].value += expense.amount;
-        } else {
-          categories[expense.category] = {
-            value: expense.amount,
-            color: COLORS[Object.keys(categories).length % COLORS.length]
-          };
-        }
-      });
-      
-      setExpenseCategories(
-        Object.keys(categories).map(name => ({
-          name,
-          value: categories[name].value,
-          color: categories[name].color
-        }))
-      );
-      
-      // Reset input
+      // Clear the input fields
       setExpenseInput({
         category: '食費',
         amount: '',
         description: '',
       });
+      
+      // Update summaries
+      setTimeout(() => updateFinancialSummary(), 0);
     }
   };
   
   // Remove an expense
   const handleRemoveExpense = (id: string) => {
-    const updatedExpenses = userData.expenses.filter(expense => expense.id !== id);
+    setUserData(prevData => ({
+      ...prevData,
+      expenses: prevData.expenses.filter(expense => expense.id !== id)
+    }));
     
-    // Recalculate totals
-    const totalIncome = calculateTotalIncome(userData.income);
-    const totalExpenses = updatedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const newSavings = totalIncome - totalExpenses;
+    // Update summaries
+    setTimeout(() => updateFinancialSummary(), 0);
+  };
+  
+  // Update expense categories visualization
+  const updateExpenseCategories = () => {
+    if (userData.expenses.length === 0) {
+      setExpenseCategories([]);
+      return;
+    }
     
-    setUserData({
-      ...userData,
-      expenses: updatedExpenses,
-      savings: newSavings
+    const categories: Record<string, {value: number, color: string}> = {};
+    
+    userData.expenses.forEach((expense, index) => {
+      if (categories[expense.category]) {
+        categories[expense.category].value += expense.amount;
+      } else {
+        categories[expense.category] = {
+          value: expense.amount,
+          color: COLORS[Object.keys(categories).length % COLORS.length]
+        };
+      }
     });
     
-    // Update monthly data
-    setMonthlyData([
-      { month: '今月', income: totalIncome, expenses: totalExpenses, savings: newSavings }
-    ]);
+    setExpenseCategories(
+      Object.keys(categories).map(name => ({
+        name,
+        value: categories[name].value,
+        color: categories[name].color
+      }))
+    );
+  };
+
+  // Handle controlled inputs
+  const handleIncomeInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    // Only allow numbers and decimal point
+    if (/^[0-9]*\.?[0-9]*$/.test(value) || value === '') {
+      setIncomeInput(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleExpenseInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     
-    // Update expense categories
-    if (updatedExpenses.length === 0) {
-      setExpenseCategories([]);
+    if (name === 'amount') {
+      // Only allow numbers and decimal point for amount
+      if (/^[0-9]*\.?[0-9]*$/.test(value) || value === '') {
+        setExpenseInput(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
     } else {
-      const categories: Record<string, {value: number, color: string}> = {};
-      
-      updatedExpenses.forEach((expense) => {
-        if (categories[expense.category]) {
-          categories[expense.category].value += expense.amount;
-        } else {
-          categories[expense.category] = {
-            value: expense.amount,
-            color: COLORS[Object.keys(categories).length % COLORS.length]
-          };
-        }
-      });
-      
-      setExpenseCategories(
-        Object.keys(categories).map(name => ({
-          name,
-          value: categories[name].value,
-          color: categories[name].color
-        }))
-      );
+      setExpenseInput(prev => ({
+        ...prev,
+        [name]: value
+      }));
     }
   };
   
@@ -216,30 +217,33 @@ export default function DashboardPage() {
               <div className="space-y-3">
                 <div className="flex space-x-2">
                   <Input
-                    type="number"
+                    type="text" // Changed from number for better control
                     placeholder="基本給を入力"
+                    name="baseSalary"
                     value={incomeInput.baseSalary}
-                    onChange={(e) => setIncomeInput({...incomeInput, baseSalary: e.target.value})}
+                    onChange={handleIncomeInputChange}
                     className="flex-grow"
                   />
                   <Button onClick={() => handleIncomeUpdate('baseSalary')}>追加</Button>
                 </div>
                 <div className="flex space-x-2">
                   <Input
-                    type="number"
+                    type="text" // Changed from number for better control
                     placeholder="みなし残業代を入力"
+                    name="overtime"
                     value={incomeInput.overtime}
-                    onChange={(e) => setIncomeInput({...incomeInput, overtime: e.target.value})}
+                    onChange={handleIncomeInputChange}
                     className="flex-grow"
                   />
                   <Button onClick={() => handleIncomeUpdate('overtime')}>追加</Button>
                 </div>
                 <div className="flex space-x-2">
                   <Input
-                    type="number"
+                    type="text" // Changed from number for better control
                     placeholder="諸手当を入力"
+                    name="allowances"
                     value={incomeInput.allowances}
-                    onChange={(e) => setIncomeInput({...incomeInput, allowances: e.target.value})}
+                    onChange={handleIncomeInputChange}
                     className="flex-grow"
                   />
                   <Button onClick={() => handleIncomeUpdate('allowances')}>追加</Button>
@@ -251,8 +255,9 @@ export default function DashboardPage() {
               <h3 className="text-lg font-medium">支出</h3>
               <div className="flex flex-col space-y-3">
                 <Select
+                  name="category"
                   value={expenseInput.category}
-                  onChange={(e) => setExpenseInput({...expenseInput, category: e.target.value})}
+                  onChange={handleExpenseInputChange}
                 >
                   <option value="食費">食費</option>
                   <option value="住居費">住居費</option>
@@ -265,16 +270,18 @@ export default function DashboardPage() {
                   <option value="その他">その他</option>
                 </Select>
                 <Input
-                  type="number"
+                  type="text" // Changed from number for better control
                   placeholder="支出額を入力"
+                  name="amount"
                   value={expenseInput.amount}
-                  onChange={(e) => setExpenseInput({...expenseInput, amount: e.target.value})}
+                  onChange={handleExpenseInputChange}
                 />
                 <Input
                   type="text"
                   placeholder="説明（任意）"
+                  name="description"
                   value={expenseInput.description}
-                  onChange={(e) => setExpenseInput({...expenseInput, description: e.target.value})}
+                  onChange={handleExpenseInputChange}
                 />
                 <Button onClick={handleAddExpense}>支出を追加</Button>
               </div>
@@ -282,9 +289,8 @@ export default function DashboardPage() {
           </div>
         </CardContent>
       </Card>
-      
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Summary cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>今月の収入</CardTitle>
@@ -401,22 +407,23 @@ export default function DashboardPage() {
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={expenseCategories}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis type="category" dataKey="name" />
-                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
-                      <Legend />
-                      <Bar dataKey="value" name="金額" fill="#8884d8">
+                    <PieChart>
+                      <Pie
+                        data={expenseCategories}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        label={({name, percent}) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
                         {expenseCategories.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
-                      </Bar>
-                    </BarChart>
+                      </Pie>
+                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
+                    </PieChart>
                   </ResponsiveContainer>
                 </div>
                 

@@ -15,7 +15,7 @@ import {
 import crypto from "crypto";
 import { Adapter } from "next-auth/adapters";
 
-// Determine if running in development mode for debugging purposes
+// Determine if running in development mode or demo mode
 export const isDevMode = () => {
   return process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV !== "production";
 };
@@ -29,19 +29,23 @@ const DEMO_USER = {
   createdAt: new Date(),
 };
 
-// Create a custom adapter that falls back to in‑memory storage if Prisma fails
-const createFallbackAdapter = (): Adapter => {
+// Create a robust fallback adapter that works without a database
+const createFallbackAdapter = () => {
+  // Try to use the PrismaAdapter by default for production use
   try {
-    // Try to use the PrismaAdapter by default for production use
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+      // Skip database connection in demo mode
+      throw new Error("Running in demo mode - using memory adapter");
+    }
     return PrismaAdapter(prisma);
   } catch (error) {
-    console.warn("Failed to initialize Prisma adapter, using fallback memory adapter", error);
+    console.warn("Using fallback memory adapter:", error instanceof Error ? error.message : String(error));
     
-    // In-memory adapter fallback – ensure all returned users have the necessary properties
-    const users = new Map<string, any>();
-    const accounts = new Map<string, any>();
-    const sessions = new Map<string, any>();
-    const verificationTokens = new Map<string, any>();
+    // In-memory adapter fallback with proper User structure
+    const users = new Map();
+    const accounts = new Map();
+    const sessions = new Map();
+    const verificationTokens = new Map();
     
     // Add demo user
     users.set(DEMO_USER.id, DEMO_USER);
@@ -49,7 +53,6 @@ const createFallbackAdapter = (): Adapter => {
     return {
       createUser: async (data) => {
         const id = crypto.randomUUID();
-        // Ensure the returned user includes createdAt and emailVerified fields.
         const user = { 
           id, 
           ...data, 
@@ -59,31 +62,37 @@ const createFallbackAdapter = (): Adapter => {
         users.set(id, user);
         return user;
       },
-      getUser: async (id: string) => users.get(id) || null,
-      getUserByEmail: async (email: string) => {
+      getUser: async (id) => users.get(id) || null,
+      getUserByEmail: async (email) => {
         for (const user of users.values()) {
           if (user.email === email) {
-            // Ensure emailVerified exists.
             return { ...user, emailVerified: user.emailVerified || null };
           }
         }
         return null;
       },
       getUserByAccount: async ({ providerAccountId, provider }) => {
-        // Find the account in the fallback accounts map.
+        // Find account
         let userId = null;
         for (const account of accounts.values()) {
-          if (
-            account.providerAccountId === providerAccountId &&
-            account.provider === provider
-          ) {
+          if (account.providerAccountId === providerAccountId && account.provider === provider) {
             userId = account.userId;
             break;
           }
         }
         if (!userId) return null;
+        
+        // Return user with required properties
         const user = users.get(userId);
-        return user ? { ...user, emailVerified: user.emailVerified || null } : null;
+        if (!user) return null;
+        
+        return {
+          id: user.id,
+          name: user.name || null,
+          email: user.email || null,
+          emailVerified: user.emailVerified || null,
+          image: user.image || null
+        };
       },
       updateUser: async (data) => {
         const user = users.get(data.id);
@@ -92,7 +101,7 @@ const createFallbackAdapter = (): Adapter => {
         users.set(data.id, updatedUser);
         return updatedUser;
       },
-      deleteUser: async (userId: string) => {
+      deleteUser: async (userId) => {
         const user = users.get(userId);
         if (!user) throw new Error("User not found");
         users.delete(userId);
@@ -106,10 +115,7 @@ const createFallbackAdapter = (): Adapter => {
       },
       unlinkAccount: async ({ providerAccountId, provider }) => {
         for (const [id, account] of accounts.entries()) {
-          if (
-            account.providerAccountId === providerAccountId &&
-            account.provider === provider
-          ) {
+          if (account.providerAccountId === providerAccountId && account.provider === provider) {
             accounts.delete(id);
             return account;
           }
@@ -121,7 +127,7 @@ const createFallbackAdapter = (): Adapter => {
         sessions.set(id, session);
         return session;
       },
-      getSessionAndUser: async (sessionToken: string) => {
+      getSessionAndUser: async (sessionToken) => {
         let session = null;
         for (const s of sessions.values()) {
           if (s.sessionToken === sessionToken) {
@@ -132,11 +138,17 @@ const createFallbackAdapter = (): Adapter => {
         if (!session) return null;
         const user = users.get(session.userId);
         if (!user) return null;
-        return { session, user: { ...user, emailVerified: user.emailVerified || null } };
+        return { 
+          session, 
+          user: { 
+            ...user, 
+            emailVerified: user.emailVerified || null 
+          } 
+        };
       },
       updateSession: async (data) => {
         let session = null;
-        let sessionId: string | undefined;
+        let sessionId = null;
         for (const [id, s] of sessions.entries()) {
           if (s.sessionToken === data.sessionToken) {
             session = s;
@@ -146,10 +158,10 @@ const createFallbackAdapter = (): Adapter => {
         }
         if (!session) return null;
         const updatedSession = { ...session, ...data };
-        sessions.set(sessionId!, updatedSession);
+        sessions.set(sessionId, updatedSession);
         return updatedSession;
       },
-      deleteSession: async (sessionToken: string) => {
+      deleteSession: async (sessionToken) => {
         for (const [id, session] of sessions.entries()) {
           if (session.sessionToken === sessionToken) {
             sessions.delete(id);
@@ -169,7 +181,7 @@ const createFallbackAdapter = (): Adapter => {
         verificationTokens.delete(key);
         return verificationToken;
       },
-    } as Adapter;
+    };
   }
 };
 
@@ -193,6 +205,19 @@ export const authOptions: NextAuthOptions = {
         }
         
         try {
+          // In demo mode, always return a successful response for preset credentials
+          if (isDevMode()) {
+            if (credentials.email === "user@example.com" && credentials.password === "password123") {
+              return {
+                id: "user-1",
+                name: "Test User",
+                email: "user@example.com",
+                emailVerified: new Date(),
+              };
+            }
+          }
+
+          // Production code - try the database
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
           }).catch(err => {
@@ -206,7 +231,10 @@ export const authOptions: NextAuthOptions = {
           if (!passwordMatch) return null;
 
           try {
-            await sendLoginNotificationEmail(user.email!, user.name || "Unknown User");
+            // Only send email notifications in production mode
+            if (!isDevMode()) {
+              await sendLoginNotificationEmail(user.email!, user.name || "Unknown User");
+            }
           } catch (emailError) {
             console.error("Failed to send login notification email:", emailError);
           }
@@ -278,6 +306,21 @@ export const authOptions: NextAuthOptions = {
 // Helper function for user registration
 export async function registerUser(name: string, email: string, password: string) {
   try {
+    // In demo mode, simulate successful registration
+    if (isDevMode()) {
+      return { 
+        success: true, 
+        user: {
+          id: "demo-" + Date.now(),
+          name,
+          email,
+          createdAt: new Date(),
+        },
+        message: "ユーザーが正常に登録されました",
+      };
+    }
+
+    // Check for existing user
     const existingUser = await prisma.user.findUnique({ where: { email } }).catch(() => null);
     if (existingUser) {
       return { success: false, error: "このメールアドレスは既に登録されています" };
@@ -323,6 +366,11 @@ export async function registerUser(name: string, email: string, password: string
 // Generate email verification token (for resending verification emails)
 export async function generateEmailVerificationTokenForResend(email: string) {
   try {
+    // In demo mode, simulate success
+    if (isDevMode()) {
+      return { success: true, message: "確認メールを送信しました" };
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return { success: false, error: "ユーザーが見つかりません" };
@@ -343,6 +391,11 @@ export async function generateEmailVerificationTokenForResend(email: string) {
 // Verify email with token
 export async function verifyEmail(token: string) {
   try {
+    // In demo mode, simulate success
+    if (isDevMode()) {
+      return { success: true, message: "メールアドレスが正常に確認されました" };
+    }
+
     const user = await prisma.user.findFirst({ where: { verificationToken: token } });
     if (!user) {
       return { success: false, error: "無効または期限切れのトークンです" };
@@ -361,6 +414,11 @@ export async function verifyEmail(token: string) {
 // Helper function for password reset
 export async function generatePasswordResetToken(email: string) {
   try {
+    // In demo mode, simulate success
+    if (isDevMode()) {
+      return { success: true, message: "パスワードリセットリンクを送信しました" };
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return { success: true, message: "パスワードリセットリンクを送信しました（メールアドレスが登録されている場合）" };
@@ -383,6 +441,11 @@ export async function generatePasswordResetToken(email: string) {
 // Helper function to reset password with token
 export async function resetPassword(token: string, newPassword: string) {
   try {
+    // In demo mode, simulate success
+    if (isDevMode()) {
+      return { success: true, message: "パスワードが正常にリセットされました" };
+    }
+
     const resetRecord = await prisma.passwordReset.findFirst({
       where: { token, expiresAt: { gt: new Date() } },
       include: { user: true },

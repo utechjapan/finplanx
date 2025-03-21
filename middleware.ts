@@ -1,7 +1,6 @@
 // middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 
 // Public paths that don't require authentication
 const publicPaths = [
@@ -25,9 +24,8 @@ const publicPaths = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Demo mode - always allow all access in development or if demo mode is enabled
+  // Always allow all access in development or if demo mode is enabled
   if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV !== 'production') {
-    console.log(`[Middleware] Development/Demo mode: allowing access to ${pathname}`);
     return NextResponse.next();
   }
   

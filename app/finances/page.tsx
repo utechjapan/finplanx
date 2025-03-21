@@ -1,3 +1,4 @@
+// app/finances/page.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -8,21 +9,6 @@ import { Input } from '@/src/components/ui/Input';
 import { Select } from '@/src/components/ui/Select';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/src/components/ui/Table';
 import { DatePicker } from '@/src/components/ui/DatePicker';
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
 import ExpenseReminderForm from '@/src/components/finance/ExpenseReminderForm';
 
 export default function FinancesPage() {
@@ -43,6 +29,19 @@ export default function FinancesPage() {
     bonusAmount: 0, // ボーナス金額
   });
 
+  // Form states as strings for better form control
+  const [salaryInputs, setSalaryInputs] = useState({
+    baseSalary: '',
+    overtimePay: '',
+    allowances: '',
+    closingDate: '20',
+    paymentDate: '25',
+    overtimeRate: '1.25',
+    holidayRate: '1.35',
+    nightRate: '1.25',
+    bonusAmount: '',
+  });
+
   // Work hours tracking
   const [workHours, setWorkHours] = useState({
     date: new Date(),
@@ -50,6 +49,14 @@ export default function FinancesPage() {
     overtimeHours: 0, // 残業時間
     holidayHours: 0, // 休日労働時間
     nightHours: 0, // 深夜労働時間
+  });
+
+  // Work hours form state
+  const [workHoursInputs, setWorkHoursInputs] = useState({
+    regularHours: '8',
+    overtimeHours: '0',
+    holidayHours: '0',
+    nightHours: '0',
   });
 
   // Work hours history
@@ -75,12 +82,12 @@ export default function FinancesPage() {
     endDate?: Date
   }>>([]);
 
-  // New expense input
+  // New expense input with string values for controlled inputs
   const [newExpense, setNewExpense] = useState({
     name: '',
     category: '家賃・住宅',
-    amount: 0,
-    dueDate: 1,
+    amount: '',
+    dueDate: '1',
     isRecurring: true,
     startDate: new Date(),
     endDate: undefined as Date | undefined,
@@ -102,7 +109,7 @@ export default function FinancesPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
-  // Form for new transaction
+  // Form for new transaction with string values
   const [newTransaction, setNewTransaction] = useState({
     date: new Date(),
     category: '家賃・住宅',
@@ -110,6 +117,35 @@ export default function FinancesPage() {
     amount: '',
     isExpense: true
   });
+
+  // Handle salary input changes
+  const handleSalaryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // Validate numeric input
+    if (/^[0-9]*\.?[0-9]*$/.test(value) || value === '') {
+      setSalaryInputs({
+        ...salaryInputs,
+        [name]: value
+      });
+    }
+  };
+
+  // Update salary information from inputs
+  const updateSalaryInfo = () => {
+    setSalaryInfo({
+      ...salaryInfo,
+      baseSalary: parseFloat(salaryInputs.baseSalary) || 0,
+      overtimePay: parseFloat(salaryInputs.overtimePay) || 0,
+      allowances: parseFloat(salaryInputs.allowances) || 0,
+      closingDate: parseInt(salaryInputs.closingDate) || 20,
+      paymentDate: parseInt(salaryInputs.paymentDate) || 25,
+      overtimeRate: parseFloat(salaryInputs.overtimeRate) || 1.25,
+      holidayRate: parseFloat(salaryInputs.holidayRate) || 1.35,
+      nightRate: parseFloat(salaryInputs.nightRate) || 1.25,
+      bonusAmount: parseFloat(salaryInputs.bonusAmount) || 0,
+    });
+  };
 
   // Helper functions
   const calculateDailyPay = (hours: typeof workHours) => {
@@ -123,27 +159,67 @@ export default function FinancesPage() {
     return Math.round(regularPay + overtimePay + holidayPay + nightPay);
   };
 
+  // Handle work hours input changes
+  const handleWorkHoursInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // Validate numeric input
+    if (/^[0-9]*\.?[0-9]*$/.test(value) || value === '') {
+      setWorkHoursInputs({
+        ...workHoursInputs,
+        [name]: value
+      });
+
+      // Also update the workHours state with parsed numbers
+      setWorkHours({
+        ...workHours,
+        [name]: parseFloat(value) || 0
+      });
+    }
+  };
+
+  // Add work hours
   const addWorkHours = () => {
-    if (workHours.regularHours === 0 && workHours.overtimeHours === 0 && 
-        workHours.holidayHours === 0 && workHours.nightHours === 0) {
+    // Parse inputs to numbers
+    const regularHours = parseFloat(workHoursInputs.regularHours) || 0;
+    const overtimeHours = parseFloat(workHoursInputs.overtimeHours) || 0;
+    const holidayHours = parseFloat(workHoursInputs.holidayHours) || 0;
+    const nightHours = parseFloat(workHoursInputs.nightHours) || 0;
+    
+    if (regularHours === 0 && overtimeHours === 0 && holidayHours === 0 && nightHours === 0) {
       return;
     }
     
-    const totalPay = calculateDailyPay(workHours);
+    const hours = {
+      ...workHours,
+      regularHours,
+      overtimeHours,
+      holidayHours,
+      nightHours
+    };
+    
+    const totalPay = calculateDailyPay(hours);
     
     const newEntry = {
       id: Date.now().toString(),
       date: new Date(workHours.date),
-      regularHours: workHours.regularHours,
-      overtimeHours: workHours.overtimeHours,
-      holidayHours: workHours.holidayHours,
-      nightHours: workHours.nightHours,
+      regularHours,
+      overtimeHours,
+      holidayHours,
+      nightHours,
       totalPay
     };
     
     setWorkHoursHistory([...workHoursHistory, newEntry]);
     
     // Reset form except date
+    setWorkHoursInputs({
+      regularHours: '8',
+      overtimeHours: '0',
+      holidayHours: '0',
+      nightHours: '0',
+    });
+    
     setWorkHours({
       ...workHours,
       regularHours: 8,
@@ -153,8 +229,41 @@ export default function FinancesPage() {
     });
   };
 
+  // Handle expense input changes
+  const handleExpenseInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (name === 'amount' || name === 'dueDate') {
+      // Validate numeric input
+      if (/^[0-9]*\.?[0-9]*$/.test(value) || value === '') {
+        setNewExpense({
+          ...newExpense,
+          [name]: value
+        });
+      }
+    } else if (type === 'checkbox') {
+      setNewExpense({
+        ...newExpense,
+        [name]: (e.target as HTMLInputElement).checked
+      });
+    } else {
+      setNewExpense({
+        ...newExpense,
+        [name]: value
+      });
+    }
+  };
+
+  // Add expense schedule
   const addExpenseSchedule = () => {
-    if (!newExpense.name || newExpense.amount <= 0) {
+    if (!newExpense.name || !newExpense.amount) {
+      return;
+    }
+    
+    const amount = parseFloat(newExpense.amount);
+    const dueDate = parseInt(newExpense.dueDate) || 1;
+    
+    if (isNaN(amount) || amount <= 0 || dueDate < 1 || dueDate > 31) {
       return;
     }
     
@@ -162,8 +271,8 @@ export default function FinancesPage() {
       id: Date.now().toString(),
       name: newExpense.name,
       category: newExpense.category,
-      amount: newExpense.amount,
-      dueDate: newExpense.dueDate,
+      amount: amount,
+      dueDate: dueDate,
       isRecurring: newExpense.isRecurring,
       startDate: new Date(newExpense.startDate),
       endDate: newExpense.endDate ? new Date(newExpense.endDate) : undefined
@@ -175,14 +284,15 @@ export default function FinancesPage() {
     setNewExpense({
       name: '',
       category: '家賃・住宅',
-      amount: 0,
-      dueDate: 1,
+      amount: '',
+      dueDate: '1',
       isRecurring: true,
       startDate: new Date(),
       endDate: undefined
     });
   };
 
+  // Generate calendar days
   const generateCalendarDays = () => {
     const year = viewMonth.getFullYear();
     const month = viewMonth.getMonth();
@@ -264,11 +374,37 @@ export default function FinancesPage() {
     return [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
   };
 
+  // Handle transaction input changes
+  const handleTransactionInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (name === 'amount') {
+      // Validate numeric input
+      if (/^[0-9]*\.?[0-9]*$/.test(value) || value === '') {
+        setNewTransaction({
+          ...newTransaction,
+          [name]: value
+        });
+      }
+    } else if (type === 'radio') {
+      setNewTransaction({
+        ...newTransaction,
+        isExpense: value === 'expense'
+      });
+    } else {
+      setNewTransaction({
+        ...newTransaction,
+        [name]: value
+      });
+    }
+  };
+
+  // Add new transaction
   const handleNewTransaction = (e: React.FormEvent) => {
     e.preventDefault();
     
     const amount = parseFloat(newTransaction.amount);
-    if (isNaN(amount) || amount <= 0) return;
+    if (isNaN(amount) || amount <= 0 || !newTransaction.description) return;
     
     const transaction = {
       id: Date.now().toString(),
@@ -450,12 +586,10 @@ export default function FinancesPage() {
                       基本給 (月)
                     </label>
                     <Input
-                      type="number"
-                      value={salaryInfo.baseSalary || ''}
-                      onChange={(e) => setSalaryInfo({
-                        ...salaryInfo,
-                        baseSalary: parseFloat(e.target.value) || 0
-                      })}
+                      type="text"
+                      name="baseSalary"
+                      value={salaryInputs.baseSalary}
+                      onChange={handleSalaryInputChange}
                       placeholder="例: 250000"
                     />
                   </div>
@@ -465,576 +599,564 @@ export default function FinancesPage() {
                       みなし残業代 (月)
                     </label>
                     <Input
-                      type="number"
-                      value={salaryInfo.overtimePay || ''}
-                      onChange={(e) => setSalaryInfo({
-                        ...salaryInfo,
-                        overtimePay: parseFloat(e.target.value) || 0
-                      })}
+                      type="text"
+                      name="overtimePay"
+                      value={salaryInputs.overtimePay}
+                      onChange={handleSalaryInputChange}
                       placeholder="例: 30000"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      諸手当 (月)
-                    </label>
-                    <Input
-                      type="number"
-                      value={salaryInfo.allowances || ''}
-                      onChange={(e) => setSalaryInfo({
-                        ...salaryInfo,
-                        allowances: parseFloat(e.target.value) || 0
-                      })}
-                      placeholder="例: 20000"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      賞与 (回あたり)
-                    </label>
-                    <Input
-                      type="number"
-                      value={salaryInfo.bonusAmount || ''}
-                      onChange={(e) => setSalaryInfo({
-                        ...salaryInfo,
-                        bonusAmount: parseFloat(e.target.value) || 0
-                      })}
-                      placeholder="例: 500000"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      給与締め日
-                    </label>
-                    <Input
-                      type="number"
-                      value={salaryInfo.closingDate}
-                      onChange={(e) => setSalaryInfo({
-                        ...salaryInfo,
-                        closingDate: parseInt(e.target.value) || 1
-                      })}
-                      min="1"
-                      max="31"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      給与支払日
-                    </label>
-                    <Input
-                      type="number"
-                      value={salaryInfo.paymentDate}
-                      onChange={(e) => setSalaryInfo({
-                        ...salaryInfo,
-                        paymentDate: parseInt(e.target.value) || 1
-                      })}
-                      min="1"
-                      max="31"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      残業割増率
-                    </label>
-                    <Input
-                      type="number"
-                      value={salaryInfo.overtimeRate}
-                      onChange={(e) => setSalaryInfo({
-                        ...salaryInfo,
-                        overtimeRate: parseFloat(e.target.value) || 1
-                      })}
-                      min="1"
-                      step="0.05"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      賞与支給月
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(month => (
-                        <Button
-                          key={month}
-                          type="button"
-                          variant={salaryInfo.bonusMonths.includes(month) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            if (salaryInfo.bonusMonths.includes(month)) {
-                              setSalaryInfo({
-                                ...salaryInfo,
-                                bonusMonths: salaryInfo.bonusMonths.filter(m => m !== month)
-                              });
-                            } else {
-                              setSalaryInfo({
-                                ...salaryInfo,
-                                bonusMonths: [...salaryInfo.bonusMonths, month].sort()
-                              });
-                            }
-                          }}
-                        >
-                          {month}月
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="mt-8 pt-6 border-t">
-                <h3 className="text-lg font-medium mb-4">勤務時間記録</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      日付
-                    </label>
-                    <DatePicker
-                      value={workHours.date}
-                      onChange={(date) => date && setWorkHours({...workHours, date})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      所定労働時間
-                    </label>
-                    <Input
-                      type="number"
-                      value={workHours.regularHours}
-                      onChange={(e) => setWorkHours({
-                        ...workHours,
-                        regularHours: parseFloat(e.target.value) || 0
-                      })}
-                      min="0"
-                      step="0.5"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      残業時間
-                    </label>
-                    <Input
-                      type="number"
-                      value={workHours.overtimeHours}
-                      onChange={(e) => setWorkHours({
-                        ...workHours,
-                        overtimeHours: parseFloat(e.target.value) || 0
-                      })}
-                      min="0"
-                      step="0.5"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      休日労働時間
-                    </label>
-                    <Input
-                      type="number"
-                      value={workHours.holidayHours}
-                      onChange={(e) => setWorkHours({
-                        ...workHours,
-                        holidayHours: parseFloat(e.target.value) || 0
-                      })}
-                      min="0"
-                      step="0.5"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      深夜労働時間
-                    </label>
-                    <Input
-                      type="number"
-                      value={workHours.nightHours}
-                      onChange={(e) => setWorkHours({
-                        ...workHours,
-                        nightHours: parseFloat(e.target.value) || 0
-                      })}
-                      min="0"
-                      step="0.5"
-                    />
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <Button 
-                      onClick={addWorkHours}
-                      className="w-full"
-                    >
-                      勤務時間を記録
-                    </Button>
-                  </div>
-                </div>
-                
-                {workHoursHistory.length > 0 && (
-                  <div className="overflow-x-auto mt-4">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>日付</TableHead>
-                          <TableHead>所定時間</TableHead>
-                          <TableHead>残業時間</TableHead>
-                          <TableHead>休日時間</TableHead>
-                          <TableHead>深夜時間</TableHead>
-                          <TableHead className="text-right">総支払額</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {workHoursHistory.map((entry) => (
-                          <TableRow key={entry.id}>
-                            <TableCell>
-                              {entry.date.toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>{entry.regularHours}h</TableCell>
-                            <TableCell>{entry.overtimeHours}h</TableCell>
-                            <TableCell>{entry.holidayHours}h</TableCell>
-                            <TableCell>{entry.nightHours}h</TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatCurrency(entry.totalPay)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="expenses" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>定期支出の管理</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    支出名
-                  </label>
-                  <Input
-                    value={newExpense.name}
-                    onChange={(e) => setNewExpense({...newExpense, name: e.target.value})}
-                    placeholder="例: 家賃"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    カテゴリ
-                  </label>
-                  <Select
-                    value={newExpense.category}
-                    onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
-                  >
-                    <option value="家賃・住宅">家賃・住宅</option>
-                    <option value="水道・光熱費">水道・光熱費</option>
-                    <option value="通信費">通信費</option>
-                    <option value="保険">保険</option>
-                    <option value="サブスクリプション">サブスクリプション</option>
-                    <option value="ローン">ローン</option>
-                    <option value="その他">その他</option>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    金額
-                  </label>
-                  <Input
-                    type="number"
-                    value={newExpense.amount || ''}
-                    onChange={(e) => setNewExpense({
-                      ...newExpense,
-                      amount: parseFloat(e.target.value) || 0
-                    })}
-                    placeholder="例: 80000"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    支払日（毎月）
-                  </label>
-                  <Input
-                    type="number"
-                    value={newExpense.dueDate}
-                    onChange={(e) => setNewExpense({
-                      ...newExpense,
-                      dueDate: parseInt(e.target.value) || 1
-                    })}
-                    min="1"
-                    max="31"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    開始日
-                  </label>
-                  <DatePicker
-                    value={newExpense.startDate}
-                    onChange={(date) => date && setNewExpense({...newExpense, startDate: date})}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    終了日（任意）
-                  </label>
-                  <DatePicker
-                    value={newExpense.endDate}
-                    onChange={(date) => setNewExpense({...newExpense, endDate: date})}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="isRecurring"
-                    checked={newExpense.isRecurring}
-                    onChange={(e) => setNewExpense({
-                      ...newExpense,
-                      isRecurring: e.target.checked
-                    })}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    定期的な支出
-                  </label>
-                </div>
-                
-                <div className="flex items-end">
-                  <Button 
-                    onClick={addExpenseSchedule}
-                    className="w-full"
-                  >
-                    支出を追加
-                  </Button>
-                </div>
-              </div>
-              
-              {expenseSchedule.length > 0 && (
-                <div className="overflow-x-auto mt-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>支出名</TableHead>
-                        <TableHead>カテゴリ</TableHead>
-                        <TableHead className="text-right">金額</TableHead>
-                        <TableHead>支払日</TableHead>
-                        <TableHead>開始日</TableHead>
-                        <TableHead>終了日</TableHead>
-                        <TableHead>定期的</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {expenseSchedule.map((expense) => (
-                        <TableRow key={expense.id}>
-                          <TableCell className="font-medium">{expense.name}</TableCell>
-                          <TableCell>{expense.category}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(expense.amount)}</TableCell>
-                          <TableCell>毎月{expense.dueDate}日</TableCell>
-                          <TableCell>{expense.startDate.toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            {expense.endDate ? expense.endDate.toLocaleDateString() : '無期限'}
-                          </TableCell>
-                          <TableCell>{expense.isRecurring ? '定期' : '単発'}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => {
-                                setExpenseSchedule(expenseSchedule.filter(e => e.id !== expense.id));
-                              }}
-                            >
-                              削除
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="transactions" className="mt-6">
-          <Card>
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
-              <CardTitle>取引履歴</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleNewTransaction} className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-                <h3 className="text-lg font-medium mb-4">新規取引の追加</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="transaction-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      日付
-                    </label>
-                    <DatePicker
-                      value={newTransaction.date}
-                      onChange={(date) => date && setNewTransaction({...newTransaction, date})}
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="transaction-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      取引タイプ
-                    </label>
-                    <div className="flex space-x-4">
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          name="transaction-type"
-                          checked={newTransaction.isExpense}
-                          onChange={() => setNewTransaction({...newTransaction, isExpense: true})}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">支出</span>
-                      </label>
-                      <label className="inline-flex items-center">
-                        <input
-                          type="radio"
-                          name="transaction-type"
-                          checked={!newTransaction.isExpense}
-                          onChange={() => setNewTransaction({...newTransaction, isExpense: false})}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">収入</span>
-                      </label>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="transaction-category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      カテゴリ
-                    </label>
-                    <Select
-                      id="transaction-category"
-                      value={newTransaction.category}
-                      onChange={(e) => setNewTransaction({...newTransaction, category: e.target.value})}
-                    >
-                      <option value="家賃・住宅">家賃・住宅</option>
-                      <option value="水道・光熱費">水道・光熱費</option>
-                      <option value="通信費">通信費</option>
-                      <option value="食費">食費</option>
-                      <option value="交通費">交通費</option>
-                      <option value="医療費">医療費</option>
-                      <option value="教育費">教育費</option>
-                      <option value="娯楽費">娯楽費</option>
-                      <option value="保険">保険</option>
-                      <option value="サブスクリプション">サブスクリプション</option>
-                      <option value="給与">給与</option>
-                      <option value="ボーナス">ボーナス</option>
-                      <option value="その他">その他</option>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="transaction-description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      説明
-                    </label>
-                    <Input
-                      id="transaction-description"
-                      value={newTransaction.description}
-                      onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})}
-                      placeholder="例: スーパーで買い物"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="transaction-amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      金額
-                    </label>
-                    <Input
-                      id="transaction-amount"
-                      type="number"
-                      value={newTransaction.amount}
-                      onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})}
-                      placeholder="例: 1000"
-                      min="0"
-                      step="1"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="flex items-end">
-                    <Button type="submit" className="w-full">
-                      取引を追加
-                    </Button>
-                  </div>
-                </div>
-              </form>
-              
-              {expenseTransactions.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>日付</TableHead>
-                        <TableHead>カテゴリ</TableHead>
-                        <TableHead>説明</TableHead>
-                        <TableHead className="text-right">金額</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {expenseTransactions.sort((a, b) => b.date.getTime() - a.date.getTime()).map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>{transaction.date.toLocaleDateString()}</TableCell>
-                          <TableCell>{transaction.category}</TableCell>
-                          <TableCell>{transaction.name}</TableCell>
-                          <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                            {formatCurrency(transaction.amount)}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => {
-                                setExpenseTransactions(expenseTransactions.filter(t => t.id !== transaction.id));
-                              }}
-                            >
-                              削除
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  まだ取引履歴がありません。新しい取引を追加してください。
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* New reminder tab */}
-        <TabsContent value="reminders" className="mt-6">
-          <ExpenseReminderForm onCreated={() => {
-            // Additional logic when a reminder is created can be added here.
-          }} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+                     諸手当 (月)
+                   </label>
+                   <Input
+                     type="text"
+                     name="allowances"
+                     value={salaryInputs.allowances}
+                     onChange={handleSalaryInputChange}
+                     placeholder="例: 20000"
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     賞与 (回あたり)
+                   </label>
+                   <Input
+                     type="text"
+                     name="bonusAmount"
+                     value={salaryInputs.bonusAmount}
+                     onChange={handleSalaryInputChange}
+                     placeholder="例: 500000"
+                   />
+                 </div>
+                 
+                 <div>
+                   <Button 
+                     onClick={updateSalaryInfo}
+                     className="w-full"
+                   >
+                     収入情報を更新
+                   </Button>
+                 </div>
+               </div>
+               
+               <div className="space-y-4">
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     給与締め日
+                   </label>
+                   <Input
+                     type="text"
+                     name="closingDate"
+                     value={salaryInputs.closingDate}
+                     onChange={handleSalaryInputChange}
+                     min="1"
+                     max="31"
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     給与支払日
+                   </label>
+                   <Input
+                     type="text"
+                     name="paymentDate"
+                     value={salaryInputs.paymentDate}
+                     onChange={handleSalaryInputChange}
+                     min="1"
+                     max="31"
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     残業割増率
+                   </label>
+                   <Input
+                     type="text"
+                     name="overtimeRate"
+                     value={salaryInputs.overtimeRate}
+                     onChange={handleSalaryInputChange}
+                     min="1"
+                     step="0.05"
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     賞与支給月
+                   </label>
+                   <div className="flex flex-wrap gap-2">
+                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(month => (
+                       <Button
+                         key={month}
+                         type="button"
+                         variant={salaryInfo.bonusMonths.includes(month) ? "default" : "outline"}
+                         size="sm"
+                         onClick={() => {
+                           if (salaryInfo.bonusMonths.includes(month)) {
+                             setSalaryInfo({
+                               ...salaryInfo,
+                               bonusMonths: salaryInfo.bonusMonths.filter(m => m !== month)
+                             });
+                           } else {
+                             setSalaryInfo({
+                               ...salaryInfo,
+                               bonusMonths: [...salaryInfo.bonusMonths, month].sort()
+                             });
+                           }
+                         }}
+                       >
+                         {month}月
+                       </Button>
+                     ))}
+                   </div>
+                 </div>
+               </div>
+             </div>
+             
+             <div className="mt-8 pt-6 border-t">
+               <h3 className="text-lg font-medium mb-4">勤務時間記録</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     日付
+                   </label>
+                   <DatePicker
+                     value={workHours.date}
+                     onChange={(date) => date && setWorkHours({...workHours, date})}
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     所定労働時間
+                   </label>
+                   <Input
+                     type="text"
+                     name="regularHours"
+                     value={workHoursInputs.regularHours}
+                     onChange={handleWorkHoursInputChange}
+                     min="0"
+                     step="0.5"
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     残業時間
+                   </label>
+                   <Input
+                     type="text"
+                     name="overtimeHours"
+                     value={workHoursInputs.overtimeHours}
+                     onChange={handleWorkHoursInputChange}
+                     min="0"
+                     step="0.5"
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     休日労働時間
+                   </label>
+                   <Input
+                     type="text"
+                     name="holidayHours"
+                     value={workHoursInputs.holidayHours}
+                     onChange={handleWorkHoursInputChange}
+                     min="0"
+                     step="0.5"
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     深夜労働時間
+                   </label>
+                   <Input
+                     type="text"
+                     name="nightHours"
+                     value={workHoursInputs.nightHours}
+                     onChange={handleWorkHoursInputChange}
+                     min="0"
+                     step="0.5"
+                   />
+                 </div>
+                 
+                 <div className="flex items-end">
+                   <Button 
+                     onClick={addWorkHours}
+                     className="w-full"
+                   >
+                     勤務時間を記録
+                   </Button>
+                 </div>
+               </div>
+               
+               {workHoursHistory.length > 0 && (
+                 <div className="overflow-x-auto mt-4">
+                   <Table>
+                     <TableHeader>
+                       <TableRow>
+                         <TableHead>日付</TableHead>
+                         <TableHead>所定時間</TableHead>
+                         <TableHead>残業時間</TableHead>
+                         <TableHead>休日時間</TableHead>
+                         <TableHead>深夜時間</TableHead>
+                         <TableHead className="text-right">総支払額</TableHead>
+                       </TableRow>
+                     </TableHeader>
+                     <TableBody>
+                       {workHoursHistory.map((entry) => (
+                         <TableRow key={entry.id}>
+                           <TableCell>
+                             {entry.date.toLocaleDateString()}
+                           </TableCell>
+                           <TableCell>{entry.regularHours}h</TableCell>
+                           <TableCell>{entry.overtimeHours}h</TableCell>
+                           <TableCell>{entry.holidayHours}h</TableCell>
+                           <TableCell>{entry.nightHours}h</TableCell>
+                           <TableCell className="text-right font-medium">
+                             {formatCurrency(entry.totalPay)}
+                           </TableCell>
+                         </TableRow>
+                       ))}
+                     </TableBody>
+                   </Table>
+                 </div>
+               )}
+             </div>
+           </CardContent>
+         </Card>
+       </TabsContent>
+       
+       <TabsContent value="expenses" className="mt-6">
+         <Card>
+           <CardHeader>
+             <CardTitle>定期支出の管理</CardTitle>
+           </CardHeader>
+           <CardContent>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                   支出名
+                 </label>
+                 <Input
+                   name="name"
+                   value={newExpense.name}
+                   onChange={handleExpenseInputChange}
+                   placeholder="例: 家賃"
+                 />
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                   カテゴリ
+                 </label>
+                 <Select
+                   name="category"
+                   value={newExpense.category}
+                   onChange={handleExpenseInputChange}
+                 >
+                   <option value="家賃・住宅">家賃・住宅</option>
+                   <option value="水道・光熱費">水道・光熱費</option>
+                   <option value="通信費">通信費</option>
+                   <option value="保険">保険</option>
+                   <option value="サブスクリプション">サブスクリプション</option>
+                   <option value="ローン">ローン</option>
+                   <option value="その他">その他</option>
+                 </Select>
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                   金額
+                 </label>
+                 <Input
+                   type="text"
+                   name="amount"
+                   value={newExpense.amount}
+                   onChange={handleExpenseInputChange}
+                   placeholder="例: 80000"
+                 />
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                   支払日（毎月）
+                 </label>
+                 <Input
+                   type="text"
+                   name="dueDate"
+                   value={newExpense.dueDate}
+                   onChange={handleExpenseInputChange}
+                   min="1"
+                   max="31"
+                 />
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                   開始日
+                 </label>
+                 <DatePicker
+                   value={newExpense.startDate}
+                   onChange={(date) => date && setNewExpense({...newExpense, startDate: date})}
+                 />
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                   終了日（任意）
+                 </label>
+                 <DatePicker
+                   value={newExpense.endDate}
+                   onChange={(date) => setNewExpense({...newExpense, endDate: date})}
+                 />
+               </div>
+               
+               <div className="flex items-center space-x-2">
+                 <input
+                   type="checkbox"
+                   id="isRecurring"
+                   name="isRecurring"
+                   checked={newExpense.isRecurring}
+                   onChange={handleExpenseInputChange}
+                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                 />
+                 <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                   定期的な支出
+                 </label>
+               </div>
+               
+               <div className="flex items-end">
+                 <Button 
+                   onClick={addExpenseSchedule}
+                   className="w-full"
+                 >
+                   支出を追加
+                 </Button>
+               </div>
+             </div>
+             
+             {expenseSchedule.length > 0 && (
+               <div className="overflow-x-auto mt-4">
+                 <Table>
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead>支出名</TableHead>
+                       <TableHead>カテゴリ</TableHead>
+                       <TableHead className="text-right">金額</TableHead>
+                       <TableHead>支払日</TableHead>
+                       <TableHead>開始日</TableHead>
+                       <TableHead>終了日</TableHead>
+                       <TableHead>定期的</TableHead>
+                       <TableHead></TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {expenseSchedule.map((expense) => (
+                       <TableRow key={expense.id}>
+                         <TableCell className="font-medium">{expense.name}</TableCell>
+                         <TableCell>{expense.category}</TableCell>
+                         <TableCell className="text-right">{formatCurrency(expense.amount)}</TableCell>
+                         <TableCell>毎月{expense.dueDate}日</TableCell>
+                         <TableCell>{expense.startDate.toLocaleDateString()}</TableCell>
+                         <TableCell>
+                           {expense.endDate ? expense.endDate.toLocaleDateString() : '無期限'}
+                         </TableCell>
+                         <TableCell>{expense.isRecurring ? '定期' : '単発'}</TableCell>
+                         <TableCell>
+                           <Button
+                             variant="destructive"
+                             size="sm"
+                             onClick={() => {
+                               setExpenseSchedule(expenseSchedule.filter(e => e.id !== expense.id));
+                             }}
+                           >
+                             削除
+                           </Button>
+                         </TableCell>
+                       </TableRow>
+                     ))}
+                   </TableBody>
+                 </Table>
+               </div>
+             )}
+           </CardContent>
+         </Card>
+       </TabsContent>
+       
+       <TabsContent value="transactions" className="mt-6">
+         <Card>
+           <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
+             <CardTitle>取引履歴</CardTitle>
+           </CardHeader>
+           <CardContent>
+             <form onSubmit={handleNewTransaction} className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+               <h3 className="text-lg font-medium mb-4">新規取引の追加</h3>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                   <label htmlFor="transaction-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     日付
+                   </label>
+                   <DatePicker
+                     value={newTransaction.date}
+                     onChange={(date) => date && setNewTransaction({...newTransaction, date})}
+                   />
+                 </div>
+                 
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     取引タイプ
+                   </label>
+                   <div className="flex space-x-4">
+                     <label className="inline-flex items-center">
+                       <input
+                         type="radio"
+                         name="transactionType"
+                         value="expense"
+                         checked={newTransaction.isExpense}
+                         onChange={handleTransactionInputChange}
+                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                       />
+                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">支出</span>
+                     </label>
+                     <label className="inline-flex items-center">
+                       <input
+                         type="radio"
+                         name="transactionType"
+                         value="income"
+                         checked={!newTransaction.isExpense}
+                         onChange={handleTransactionInputChange}
+                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                       />
+                       <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">収入</span>
+                     </label>
+                   </div>
+                 </div>
+                 
+                 <div>
+                   <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     カテゴリ
+                   </label>
+                   <Select
+                     id="category"
+                     name="category"
+                     value={newTransaction.category}
+                     onChange={handleTransactionInputChange}
+                   >
+                     <option value="家賃・住宅">家賃・住宅</option>
+                     <option value="水道・光熱費">水道・光熱費</option>
+                     <option value="通信費">通信費</option>
+                     <option value="食費">食費</option>
+                     <option value="交通費">交通費</option>
+                     <option value="医療費">医療費</option>
+                     <option value="教育費">教育費</option>
+                     <option value="娯楽費">娯楽費</option>
+                     <option value="保険">保険</option>
+                     <option value="サブスクリプション">サブスクリプション</option>
+                     <option value="給与">給与</option>
+                     <option value="ボーナス">ボーナス</option>
+                     <option value="その他">その他</option>
+                   </Select>
+                 </div>
+                 
+                 <div>
+                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     説明
+                   </label>
+                   <Input
+                     id="description"
+                     name="description"
+                     value={newTransaction.description}
+                     onChange={handleTransactionInputChange}
+                     placeholder="例: スーパーで買い物"
+                     required
+                   />
+                 </div>
+                 
+                 <div>
+                   <label htmlFor="amount" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                     金額
+                   </label>
+                   <Input
+                     id="amount"
+                     name="amount"
+                     type="text"
+                     value={newTransaction.amount}
+                     onChange={handleTransactionInputChange}
+                     placeholder="例: 1000"
+                     required
+                   />
+                 </div>
+                 
+                 <div className="flex items-end">
+                   <Button type="submit" className="w-full">
+                     取引を追加
+                   </Button>
+                 </div>
+               </div>
+             </form>
+             
+             {expenseTransactions.length > 0 ? (
+               <div className="overflow-x-auto">
+                 <Table>
+                   <TableHeader>
+                     <TableRow>
+                       <TableHead>日付</TableHead>
+                       <TableHead>カテゴリ</TableHead>
+                       <TableHead>説明</TableHead>
+                       <TableHead className="text-right">金額</TableHead>
+                       <TableHead></TableHead>
+                     </TableRow>
+                   </TableHeader>
+                   <TableBody>
+                     {expenseTransactions.sort((a, b) => b.date.getTime() - a.date.getTime()).map((transaction) => (
+                       <TableRow key={transaction.id}>
+                         <TableCell>{transaction.date.toLocaleDateString()}</TableCell>
+                         <TableCell>{transaction.category}</TableCell>
+                         <TableCell>{transaction.name}</TableCell>
+                         <TableCell className={`text-right ${transaction.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                           {formatCurrency(transaction.amount)}
+                         </TableCell>
+                         <TableCell>
+                           <Button
+                             variant="destructive"
+                             size="sm"
+                             onClick={() => {
+                               setExpenseTransactions(expenseTransactions.filter(t => t.id !== transaction.id));
+                             }}
+                           >
+                             削除
+                           </Button>
+                         </TableCell>
+                       </TableRow>
+                     ))}
+                   </TableBody>
+                 </Table>
+               </div>
+             ) : (
+               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                 まだ取引履歴がありません。新しい取引を追加してください。
+               </div>
+             )}
+           </CardContent>
+         </Card>
+       </TabsContent>
+       
+       {/* New reminder tab */}
+       <TabsContent value="reminders" className="mt-6">
+         <ExpenseReminderForm onCreated={() => {
+           // Additional logic when a reminder is created can be added here.
+         }} />
+       </TabsContent>
+     </Tabs>
+   </div>
+ );
 }
