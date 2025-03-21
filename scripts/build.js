@@ -1,9 +1,9 @@
-// scripts/build.js - 改善されたビルドプロセス
+// scripts/build.js - Improved build process
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// デモモードの設定
+// Demo mode flag
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 console.log(`🛠️ FinPlanX ビルドスクリプト`);
@@ -11,7 +11,7 @@ console.log(`==============================`);
 console.log(`🔧 ビルドモード: ${DEMO_MODE ? 'デモ' : '本番'}`);
 console.log(`🔧 環境: ${process.env.NODE_ENV || 'development'}`);
 
-// 環境変数ファイルの確認
+// Check for environment variable files
 const envFiles = ['.env', '.env.local', '.env.production', '.env.development'];
 let envFileExists = false;
 
@@ -26,7 +26,7 @@ for (const file of envFiles) {
 if (!envFileExists) {
   console.log('⚠️ 環境変数ファイルが見つかりません。デフォルト設定を使用します。');
   
-  // デフォルトの環境変数設定を作成
+  // Create default environment variables
   const defaultEnv = `
 # Default environment settings
 NEXTAUTH_URL=${process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'}
@@ -40,7 +40,7 @@ DATABASE_URL=${process.env.DATABASE_URL || 'postgresql://postgres:password@local
   console.log('✅ デフォルトの .env.local ファイルを作成しました');
 }
 
-// Prismaのデータベース設定が存在するか確認
+// Check Prisma database setup
 try {
   const schemaFile = path.join(process.cwd(), 'prisma/schema.prisma');
   
@@ -50,7 +50,7 @@ try {
     if (!schemaContent.includes('datasource db')) {
       console.error('❌ エラー: schema.prismaにデータソース定義がありません');
       
-      // 基本的なデータソース定義を追加
+      // Add basic datasource definition
       const newSchema = `datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -68,28 +68,33 @@ ${schemaContent}`;
   console.error('❌ Prismaスキーマの確認中にエラーが発生しました:', error);
 }
 
-// TypeScriptのチェック
+// Check for TypeScript errors but continue regardless
 try {
   console.log('🔍 TypeScriptエラーを確認中...');
-  execSync('npx tsc --noEmit', { stdio: 'pipe' });
-  console.log('✅ TypeScriptエラーはありません');
-} catch (error) {
-  console.log('⚠️ TypeScriptエラーが検出されましたが、ビルドを続行します:');
-  if (error.stdout) {
-    const errorOutput = error.stdout.toString();
-    // 長いエラーメッセージを要約
-    const errorLines = errorOutput.split('\n').filter(line => line.includes('error'));
-    console.log(`エラー数: ${errorLines.length}`);
-    
-    // 最初の5つのエラーのみ表示
-    errorLines.slice(0, 5).forEach(line => console.log(line));
-    if (errorLines.length > 5) {
-      console.log(`... および ${errorLines.length - 5} 個の追加エラー`);
+  
+  try {
+    execSync('npx tsc --noEmit', { stdio: 'pipe' });
+    console.log('✅ TypeScriptエラーはありません');
+  } catch (error) {
+    console.log('⚠️ TypeScriptエラーが検出されましたが、ビルドを続行します:');
+    if (error.stdout) {
+      const errorOutput = error.stdout.toString();
+      // Summarize long error messages
+      const errorLines = errorOutput.split('\n').filter(line => line.includes('error'));
+      console.log(`エラー数: ${errorLines.length}`);
+      
+      // Show only first 5 errors
+      errorLines.slice(0, 5).forEach(line => console.log(line));
+      if (errorLines.length > 5) {
+        console.log(`... および ${errorLines.length - 5} 個の追加エラー`);
+      }
     }
   }
+} catch (error) {
+  console.error('❌ TypeScript検証中にエラーが発生しました:', error);
 }
 
-// キャッシュをクリアしてからビルド
+// Clear Next.js cache
 try {
   console.log('🧹 Next.jsキャッシュをクリア中...');
   execSync('npx rimraf .next', { stdio: 'inherit' });
@@ -97,7 +102,30 @@ try {
   console.warn('⚠️ キャッシュのクリア中にエラーが発生しましたが、続行します');
 }
 
-// 依存関係のインストール
+// Install Tailwind and related dependencies if not already installed
+try {
+  console.log('📦 Tailwind関連の依存関係を確認中...');
+  // Install Tailwind CSS and plugins if they don't exist
+  try {
+    require.resolve('@tailwindcss/forms');
+    console.log('✅ @tailwindcss/forms は既にインストールされています');
+  } catch (e) {
+    console.log('📦 @tailwindcss/forms をインストール中...');
+    execSync('npm install --save @tailwindcss/forms', { stdio: 'inherit' });
+  }
+  
+  try {
+    require.resolve('@tailwindcss/typography');
+    console.log('✅ @tailwindcss/typography は既にインストールされています');
+  } catch (e) {
+    console.log('📦 @tailwindcss/typography をインストール中...');
+    execSync('npm install --save @tailwindcss/typography', { stdio: 'inherit' });
+  }
+} catch (error) {
+  console.warn('⚠️ Tailwind依存関係のチェック中にエラーが発生しましたが、続行します:', error);
+}
+
+// Install dependencies
 try {
   console.log('📦 依存関係をインストール中...');
   execSync('npm install', { stdio: 'inherit' });
@@ -106,22 +134,22 @@ try {
   process.exit(1);
 }
 
-// Prisma クライアントの生成
+// Generate Prisma client
 try {
   console.log('🔧 Prismaクライアントを生成中...');
   execSync('npx prisma generate', { stdio: 'inherit' });
 } catch (error) {
   console.error('❌ Prismaクライアントの生成中にエラーが発生しました:', error);
-  // プロダクションではPrisma生成エラーが発生した場合は終了
+  // Exit if Prisma generation fails in production
   if (process.env.NODE_ENV === 'production') {
     process.exit(1);
   }
 }
 
-// Next.js ビルド
+// Start Next.js build
 console.log('🚀 Next.js ビルドを開始します...');
 try {
-  // ビルド時に型エラーを無視する環境変数を設定
+  // Set environment variables to ignore type errors
   const env = {
     ...process.env,
     NEXT_TYPESCRIPT_COMPILE_ONLY_IF_PASSING: 'false',
@@ -129,7 +157,7 @@ try {
     NEXT_IGNORE_ESLINT_ERRORS: 'true'
   };
 
-  // ビルドを実行
+  // Run the build
   execSync('next build', { 
     env, 
     stdio: 'inherit' 

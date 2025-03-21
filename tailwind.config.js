@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class', // Enable class-based dark mode
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -11,30 +11,30 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#3b82f6', // Blue-500
-          foreground: '#ffffff', // White
+          DEFAULT: '#3b82f6',
+          foreground: '#ffffff',
         },
         secondary: {
-          DEFAULT: '#6b7280', // Gray-500
-          foreground: '#ffffff', // White
+          DEFAULT: '#6b7280',
+          foreground: '#ffffff',
         },
         destructive: {
-          DEFAULT: '#ef4444', // Red-500
-          foreground: '#ffffff', // White
+          DEFAULT: '#ef4444',
+          foreground: '#ffffff',
         },
         muted: {
-          DEFAULT: '#f3f4f6', // Gray-100
-          foreground: '#6b7280', // Gray-500
+          DEFAULT: '#f3f4f6',
+          foreground: '#6b7280',
         },
         accent: {
-          DEFAULT: '#f3f4f6', // Gray-100
-          foreground: '#1f2937', // Gray-800
+          DEFAULT: '#f3f4f6',
+          foreground: '#1f2937',
         },
-        background: '#ffffff', // White
-        foreground: '#1f2937', // Gray-800
-        border: '#e5e7eb', // Gray-200
-        input: '#e5e7eb', // Gray-200
-        ring: '#3b82f6', // Blue-500
+        background: '#ffffff',
+        foreground: '#1f2937',
+        border: '#e5e7eb',
+        input: '#e5e7eb',
+        ring: '#3b82f6',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
