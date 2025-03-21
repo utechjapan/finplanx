@@ -17,10 +17,19 @@ import { Adapter } from "next-auth/adapters";
 
 // Determine if running in development mode for debugging purposes
 export const isDevMode = () => {
-  return process.env.NODE_ENV !== "production";
+  return process.env.NEXT_PUBLIC_DEMO_MODE === 'true' || process.env.NODE_ENV !== "production";
 };
 
-// Create a custom adapter that falls back to in-memory storage if Prisma fails
+// Mock user for demo mode with all required properties
+const DEMO_USER = {
+  id: "demo-user-id",
+  name: "Demo User",
+  email: "demo@example.com",
+  emailVerified: new Date(),
+  createdAt: new Date(),
+};
+
+// Create a custom adapter that falls back to in‑memory storage if Prisma fails
 const createFallbackAdapter = (): Adapter => {
   try {
     // Try to use the PrismaAdapter by default for production use
@@ -28,34 +37,42 @@ const createFallbackAdapter = (): Adapter => {
   } catch (error) {
     console.warn("Failed to initialize Prisma adapter, using fallback memory adapter", error);
     
-    // In-memory adapter as fallback - important for types to match Adapter interface
-    const users = new Map();
-    const accounts = new Map();
-    const sessions = new Map();
-    const verificationTokens = new Map();
+    // In-memory adapter fallback – ensure all returned users have the necessary properties
+    const users = new Map<string, any>();
+    const accounts = new Map<string, any>();
+    const sessions = new Map<string, any>();
+    const verificationTokens = new Map<string, any>();
+    
+    // Add demo user
+    users.set(DEMO_USER.id, DEMO_USER);
     
     return {
       createUser: async (data) => {
         const id = crypto.randomUUID();
-        const user = { id, ...data, emailVerified: null };
+        // Ensure the returned user includes createdAt and emailVerified fields.
+        const user = { 
+          id, 
+          ...data, 
+          emailVerified: data.emailVerified || null, 
+          createdAt: new Date() 
+        };
         users.set(id, user);
         return user;
       },
-      getUser: async (id) => {
-        return users.get(id) || null;
-      },
-      getUserByEmail: async (email) => {
+      getUser: async (id: string) => users.get(id) || null,
+      getUserByEmail: async (email: string) => {
         for (const user of users.values()) {
           if (user.email === email) {
-            return user;
+            // Ensure emailVerified exists.
+            return { ...user, emailVerified: user.emailVerified || null };
           }
         }
         return null;
       },
       getUserByAccount: async ({ providerAccountId, provider }) => {
-        // Find the account
+        // Find the account in the fallback accounts map.
         let userId = null;
-        for (const [id, account] of accounts.entries()) {
+        for (const account of accounts.values()) {
           if (
             account.providerAccountId === providerAccountId &&
             account.provider === provider
@@ -64,11 +81,8 @@ const createFallbackAdapter = (): Adapter => {
             break;
           }
         }
-        
         if (!userId) return null;
-        
         const user = users.get(userId);
-        // Ensure user has emailVerified property to satisfy the AdapterUser type
         return user ? { ...user, emailVerified: user.emailVerified || null } : null;
       },
       updateUser: async (data) => {
@@ -78,7 +92,7 @@ const createFallbackAdapter = (): Adapter => {
         users.set(data.id, updatedUser);
         return updatedUser;
       },
-      deleteUser: async (userId) => {
+      deleteUser: async (userId: string) => {
         const user = users.get(userId);
         if (!user) throw new Error("User not found");
         users.delete(userId);
@@ -107,7 +121,7 @@ const createFallbackAdapter = (): Adapter => {
         sessions.set(id, session);
         return session;
       },
-      getSessionAndUser: async (sessionToken) => {
+      getSessionAndUser: async (sessionToken: string) => {
         let session = null;
         for (const s of sessions.values()) {
           if (s.sessionToken === sessionToken) {
@@ -115,21 +129,14 @@ const createFallbackAdapter = (): Adapter => {
             break;
           }
         }
-        
         if (!session) return null;
-        
         const user = users.get(session.userId);
         if (!user) return null;
-        
-        return {
-          session,
-          user: { ...user, emailVerified: user.emailVerified || null }
-        };
+        return { session, user: { ...user, emailVerified: user.emailVerified || null } };
       },
       updateSession: async (data) => {
         let session = null;
-        let sessionId = null;
-        
+        let sessionId: string | undefined;
         for (const [id, s] of sessions.entries()) {
           if (s.sessionToken === data.sessionToken) {
             session = s;
@@ -137,14 +144,12 @@ const createFallbackAdapter = (): Adapter => {
             break;
           }
         }
-        
         if (!session) return null;
-        
         const updatedSession = { ...session, ...data };
         sessions.set(sessionId!, updatedSession);
         return updatedSession;
       },
-      deleteSession: async (sessionToken) => {
+      deleteSession: async (sessionToken: string) => {
         for (const [id, session] of sessions.entries()) {
           if (session.sessionToken === sessionToken) {
             sessions.delete(id);
@@ -153,18 +158,18 @@ const createFallbackAdapter = (): Adapter => {
         }
       },
       createVerificationToken: async (data) => {
-        verificationTokens.set(data.identifier + data.token, data);
+        const key = data.identifier + data.token;
+        verificationTokens.set(key, data);
         return data;
       },
       useVerificationToken: async ({ identifier, token }) => {
         const key = identifier + token;
         const verificationToken = verificationTokens.get(key);
         if (!verificationToken) return null;
-        
         verificationTokens.delete(key);
         return verificationToken;
-      }
-    };
+      },
+    } as Adapter;
   }
 };
 
@@ -181,6 +186,11 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
+
+        // Special case for demo login
+        if (isDevMode() && credentials.email === "demo@example.com") {
+          return DEMO_USER;
+        }
         
         try {
           const user = await prisma.user.findUnique({
@@ -195,7 +205,6 @@ export const authOptions: NextAuthOptions = {
           const passwordMatch = await compare(credentials.password, user.password);
           if (!passwordMatch) return null;
 
-          // Attempt to send login notification email
           try {
             await sendLoginNotificationEmail(user.email!, user.name || "Unknown User");
           } catch (emailError) {
@@ -269,17 +278,14 @@ export const authOptions: NextAuthOptions = {
 // Helper function for user registration
 export async function registerUser(name: string, email: string, password: string) {
   try {
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } }).catch(() => null);
     if (existingUser) {
       return { success: false, error: "このメールアドレスは既に登録されています" };
     }
     
-    // Hash password and create verification token
     const hashedPassword = await hash(password, 12);
     const verificationToken = crypto.randomUUID();
 
-    // Create the user in the database
     const user = await prisma.user.create({
       data: {
         name,
@@ -292,7 +298,6 @@ export async function registerUser(name: string, email: string, password: string
       throw err;
     });
 
-    // Send verification email
     try {
       await sendEmailVerificationEmail(email, name, verificationToken);
     } catch (emailError) {
