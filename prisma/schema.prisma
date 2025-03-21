@@ -10,16 +10,17 @@ generator client {
 }
 
 model User {
-  id             String         @id @default(cuid())
-  name           String?
-  email          String?        @unique
-  password       String?        // Added to support credentials login
-  emailVerified  DateTime?
-  image          String?
-  accounts       Account[]
-  sessions       Session[]
-  passwordResets PasswordReset[]
-  notifications  Notification[]
+  id                String         @id @default(cuid())
+  name              String?
+  email             String?        @unique
+  password          String?
+  emailVerified     DateTime?
+  verificationToken String?        // <-- Added for email verification
+  image             String?
+  accounts          Account[]
+  sessions          Session[]
+  passwordResets    PasswordReset[]
+  notifications     Notification[]
 }
 
 model Account {
