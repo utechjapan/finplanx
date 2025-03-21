@@ -107,6 +107,20 @@ const calculateMonthlyPayment = (totalAmount: number, annualRate: number, years:
     color: debt.color
   }));
 
+  // カスタムXAxisのtick関数 - ここを修正
+  const customAxisTick = (props: any) => {
+    const { x, y, payload } = props;
+    const month = payload.value.split('ヶ')[0];
+    if (month % 6 === 0) {
+      return (
+        <text x={x} y={y + 15} textAnchor="middle" fill="#666">
+          {month}ヶ月目
+        </text>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h1 className="text-2xl font-bold mb-6 text-center">借金返済計画</h1>
@@ -221,18 +235,7 @@ const calculateMonthlyPayment = (totalAmount: number, annualRate: number, years:
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="label" 
-              tick={({ x, y, payload }) => {
-                // 6か月ごとに表示
-                const month = payload.value.split('ヶ')[0];
-                if (month % 6 === 0) {
-                  return (
-                    <text x={x} y={y + 15} textAnchor="middle" fill="#666">
-                      {month}ヶ月目
-                    </text>
-                  );
-                }
-                return null;
-              }}
+              tick={customAxisTick}
             />
             <YAxis />
             <Tooltip 

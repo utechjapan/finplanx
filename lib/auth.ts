@@ -1,11 +1,16 @@
 // lib/auth.ts
-import { NextAuthOptions } from "next-auth";
+import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { compare } from "bcrypt";
+import { demoAuthOptions } from "./auth-demo";
 
-export const authOptions: NextAuthOptions = {
+// 環境変数によってデモモードかどうかを判定
+const isDemoMode = process.env.DEMO_MODE === "1";
+
+// 本番環境用の認証設定
+export const productionAuthOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -15,18 +20,6 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // デモモードでは、ハードコードされた認証情報を使用
-        if (process.env.NODE_ENV === "development") {
-          if (credentials?.email === "user@example.com" && credentials?.password === "password123") {
-            return {
-              id: "demo-user",
-              name: "デモユーザー",
-              email: "user@example.com",
-            };
-          }
-        }
-
-        // 本番モードでの認証処理
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
@@ -87,13 +80,5 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === "development",
 };
 
-// タイプセーフなセッション
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      name: string;
-      email: string;
-    };
-  }
-}
+// デモモードか本番環境かによって適切な認証設定を返す
+export const authOptions: NextAuthOptions = isDemoMode ? demoAuthOptions : productionAuthOptions;
