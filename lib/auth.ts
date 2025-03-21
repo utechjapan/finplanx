@@ -1,6 +1,9 @@
 // lib/auth.ts
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import GitHubProvider from "next-auth/providers/github";
+// import TwitterProvider from "next-auth/providers/twitter"; // Uncomment if using Twitter
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { compare, hash } from "bcrypt";
@@ -32,7 +35,7 @@ console.log(`Auth mode: ${isDevMode() ? 'DEMO/DEV MODE' : 'PRODUCTION MODE'}`);
 export const authOptions: NextAuthOptions = {
   // Use Prisma adapter for database session storage when not in demo mode
   ...(isDevMode() ? {} : { adapter: PrismaAdapter(prisma) }),
-  
+
   providers: [
     // Credentials provider for email/password login
     CredentialsProvider({
@@ -67,14 +70,13 @@ export const authOptions: NextAuthOptions = {
               };
             }
             
-            // Demo mode feature: Any email/password combination works, creating a temporary user
+            // Demo mode feature: In demo mode, allow any credentials to log in as demo user
             if (process.env.DEMO_MODE === "1") {
-              console.log('Creating temporary demo user for:', credentials.email);
-              const name = credentials.email.split('@')[0];
+              console.log('Creating demo session for user:', credentials.email);
               return {
-                id: "demo-user-" + Date.now(),
-                name: name.charAt(0).toUpperCase() + name.slice(1),
-                email: credentials.email,
+                id: "demo-user-1",
+                name: "デモユーザー",
+                email: "demo@example.com",
               };
             }
             
@@ -110,6 +112,25 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+
+    // Add Google provider
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
+
+    // Add GitHub provider
+    GitHubProvider({
+      clientId: process.env.GITHUB_ID!,
+      clientSecret: process.env.GITHUB_SECRET!,
+    }),
+
+    // Optional: Add Twitter provider (if needed)
+    // TwitterProvider({
+    //   clientId: process.env.TWITTER_CLIENT_ID!,
+    //   clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+    //   version: "2.0", // Use OAuth 2.0
+    // }),
   ],
   
   session: {
@@ -167,6 +188,7 @@ export async function registerUser(name: string, email: string, password: string
       };
     }
     
+    // In demo mode, always succeed with a new demo user
     return {
       success: true,
       user: {

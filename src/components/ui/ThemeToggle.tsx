@@ -36,17 +36,16 @@ export function ThemeToggle() {
 
   return (
     <Button
-      // Using outline variant instead of ghost for better visibility
       variant="outline" 
       size="icon"
       onClick={toggleTheme}
       aria-label={theme === 'light' ? 'ダークモードに切り替え' : 'ライトモードに切り替え'}
-      className="bg-opacity-80 text-primary hover:text-primary-foreground hover:bg-primary"
+      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
     >
       {theme === 'light' ? (
-        <Moon size={20} />
+        <Moon size={20} className="text-gray-800" />
       ) : (
-        <Sun size={20} className="text-yellow-300" />
+        <Sun size={20} className="text-yellow-400" />
       )}
     </Button>
   );

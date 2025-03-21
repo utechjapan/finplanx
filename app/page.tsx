@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { signIn } from 'next-auth/react';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { Button } from '@/src/components/ui/Button';
 
@@ -126,6 +127,14 @@ export default function Home() {
                   <Link 
                     href="/demo" 
                     className="px-8 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-center"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      signIn('credentials', {
+                        email: 'demo@example.com',
+                        password: 'password123',
+                        callbackUrl: '/dashboard'
+                      });
+                    }}
                   >
                     無料でシミュレーション
                   </Link>
@@ -341,6 +350,14 @@ export default function Home() {
                 <Link 
                   href="/demo" 
                   className="px-8 py-3 border border-white text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-900 transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    signIn('credentials', {
+                      email: 'demo@example.com',
+                      password: 'password123',
+                      callbackUrl: '/dashboard'
+                    });
+                  }}
                 >
                   デモを試す
                 </Link>

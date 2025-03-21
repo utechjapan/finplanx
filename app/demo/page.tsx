@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { 
   LineChart, 
@@ -813,8 +814,19 @@ export default function DemoPage() {
               </Card>
             </div>
             
-            <div className="flex justify-end">
-              <Button onClick={resetForm}>もう一度シミュレーション</Button>
+            <div className="mt-16 text-center">
+              <Button 
+                onClick={() => {
+                  signIn('credentials', {
+                    email: 'demo@example.com',
+                    password: 'password123',
+                    callbackUrl: '/dashboard'
+                  });
+                }}
+                className="px-8 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+              >
+                無料で始める
+              </Button>
             </div>
           </motion.div>
         );

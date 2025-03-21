@@ -38,14 +38,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // デモモードチェック - 開発環境またはDEMO_MODE=1の場合はアクセスを許可
+  const isDemoMode = process.env.NODE_ENV === 'development' || process.env.DEMO_MODE === '1';
+  if (isDemoMode) {
+    // console.log('Demo mode active, allowing access to:', pathname);
+    return NextResponse.next();
+  }
+
   // JWT トークンを取得
   const token = await getToken({ req: request });
   
-  // デモモードチェック - 開発環境またはDEMO_MODE=1の場合はアクセスを許可
-  const isDemoMode = process.env.NODE_ENV === 'development' || process.env.DEMO_MODE === '1';
-  
-  // 未認証でデモモードでない場合はログインページにリダイレクト
-  if (!token && !isDemoMode) {
+  // 未認証の場合はログインページにリダイレクト
+  if (!token) {
     const url = new URL('/login', request.url);
     url.searchParams.set('callbackUrl', encodeURI(pathname));
     return NextResponse.redirect(url);

@@ -87,8 +87,8 @@ export default function RegisterPage() {
             router.push('/login');
           }, 2000);
         } else {
-          // Successful login
-          router.push('/dashboard');
+          // Successful login - force redirect to dashboard
+          window.location.href = '/dashboard';
         }
       }, 1500);
       
@@ -118,12 +118,12 @@ export default function RegisterPage() {
       
       if (result?.error) {
         console.error('Demo login error:', result.error);
-        setError('デモログインに失敗しました。DEMO_MODE環境変数が設定されているか確認してください。');
+        setError('デモログインに失敗しました。しばらくしてからもう一度お試しください。');
         setIsLoading(false);
         setSuccess(null);
       } else {
-        // Successful login
-        router.push('/dashboard');
+        // Successful login - force redirect to dashboard
+        window.location.href = '/dashboard';
       }
     } catch (error) {
       console.error('Demo login error:', error);

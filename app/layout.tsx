@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
-import { AuthProvider } from "@/src/components/providers/AuthProvider";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -29,9 +29,9 @@ export default function RootLayout({
   return (
     <html lang="ja" className={`${inter.variable} ${roboto_mono.variable}`}>
       <body className="antialiased">
-        <AuthProvider>
+        <Providers>
           {children}
-        </AuthProvider>
+        </Providers>
       </body>
     </html>
   );
