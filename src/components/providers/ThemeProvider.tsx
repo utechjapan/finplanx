@@ -1,3 +1,4 @@
+// Move the ThemeProvider code from src/components/ui/ThemeProvider.tsx to providers folder
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
