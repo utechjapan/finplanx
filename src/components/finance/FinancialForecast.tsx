@@ -86,7 +86,7 @@ const FinancialForecast = () => {
   const { projectionData, summaryData } = calculateProjection();
   
   // Format large numbers for display
-  const formatCurrency = (value) => {
+  const formatCurrency = (value: number) => {
     if (value >= 1000000) {
       return `${(value / 1000000).toFixed(2)}百万円`;
     }

@@ -20,10 +20,11 @@ import {
   Pie,
   Cell,
   ComposedChart,
-  Area
+  Area,
+  AreaChart  // <-- Added AreaChart import
 } from 'recharts';
 
-// サンプルデータ
+// Sample data
 const monthlyData = [
   { month: '4月', income: 290000, expenses: 161000, savings: 129000, balance: 129000 },
   { month: '5月', income: 290000, expenses: 215000, savings: 75000, balance: 204000 },
@@ -66,16 +67,6 @@ const netWorthData = [
   { year: '2030年', assets: 14691200, liabilities: 0, netWorth: 14691200 },
 ];
 
-const categoryColors = {
-  '住居費': '#8884d8',
-  '食費': '#83a6ed',
-  '通信費': '#8dd1e1',
-  '光熱費': '#82ca9d',
-  '交通費': '#a4de6c',
-  '娯楽費': '#ffc658',
-  'その他': '#ff8042'
-};
-
 const COLORS = ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d', '#a4de6c', '#ffc658', '#ff8042'];
 
 export default function ReportsPage() {
@@ -90,7 +81,6 @@ export default function ReportsPage() {
     alert('CSVとしてエクスポート（実際の実装ではCSVをダウンロードします）');
   };
 
-  // Format tooltip values based on what they represent
   const formatTooltipValue = (value, name) => {
     if (name === '貯蓄率') {
       return `${typeof value === 'number' ? value.toFixed(1) : value}%`;
@@ -100,7 +90,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      {/* ヘッダー部分 */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
         <h1 className="text-3xl font-bold">レポート</h1>
         <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
@@ -137,13 +127,13 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* エクスポートボタン */}
+      {/* Export buttons */}
       <div className="flex flex-wrap gap-4">
         <Button variant="outline" onClick={handleExportPDF}>PDFとしてエクスポート</Button>
         <Button variant="outline" onClick={handleExportCSV}>CSVとしてエクスポート</Button>
       </div>
 
-      {/* レポートタイプに応じた表示 */}
+      {/* Monthly Report */}
       {reportType === 'monthly' && (
         <Card>
           <CardHeader>
@@ -151,7 +141,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* 月別収支グラフ */}
+              {/* Monthly Bar Chart */}
               <div>
                 <h3 className="text-lg font-medium mb-4">月別収支グラフ</h3>
                 <div className="h-80">
@@ -170,7 +160,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* 月間貯蓄率の推移 */}
+              {/* Monthly Savings Rate Line Chart */}
               <div>
                 <h3 className="text-lg font-medium mb-4">月間貯蓄率の推移</h3>
                 <div className="h-80">
@@ -186,7 +176,6 @@ export default function ReportsPage() {
                         return [`¥${typeof value === 'number' ? value.toLocaleString() : value}`, name];
                       }} />
                       <Legend />
-                      {/* inline 関数で貯蓄率を計算 */}
                       <Line
                         type="monotone"
                         dataKey={(data) => (data.savings / data.income) * 100}
@@ -199,7 +188,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* 月別詳細テーブル */}
+              {/* Monthly Detail Table */}
               <div className="lg:col-span-2">
                 <h3 className="text-lg font-medium mb-4">月別詳細</h3>
                 <div className="overflow-x-auto">
@@ -230,7 +219,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* レポート要約 */}
+              {/* Report Summary */}
               <div className="lg:col-span-2">
                 <h3 className="text-lg font-medium mb-4">レポート要約</h3>
                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -272,6 +261,7 @@ export default function ReportsPage() {
         </Card>
       )}
 
+      {/* Yearly Report */}
       {reportType === 'yearly' && (
         <Card>
           <CardHeader>
@@ -279,7 +269,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* 年間収支推移 */}
+              {/* Yearly Financial Transition */}
               <div>
                 <h3 className="text-lg font-medium mb-4">年間収支推移</h3>
                 <div className="h-80">
@@ -312,7 +302,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* 年間貯蓄推移 */}
+              {/* Yearly Savings Transition */}
               <div>
                 <h3 className="text-lg font-medium mb-4">年間貯蓄推移</h3>
                 <div className="h-80">
@@ -335,7 +325,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* 年別詳細テーブル */}
+              {/* Yearly Detail Table */}
               <div className="lg:col-span-2">
                 <h3 className="text-lg font-medium mb-4">年別詳細</h3>
                 <div className="overflow-x-auto">
@@ -343,163 +333,39 @@ export default function ReportsPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>年</TableHead>
-                        <TableHead className="text-right">総収入</TableHead>
-                        <TableHead className="text-right">総支出</TableHead>
-                        <TableHead className="text-right">総貯蓄</TableHead>
-                        <TableHead className="text-right">貯蓄率</TableHead>
+                        <TableHead className="text-right">資産</TableHead>
+                        <TableHead className="text-right">負債</TableHead>
+                        <TableHead className="text-right">純資産</TableHead>
+                        <TableHead className="text-right">前年比</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {yearlyFinancials.map((data, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{data.year}</TableCell>
-                          <TableCell className="text-right">¥{data.totalIncome.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">¥{data.totalExpenses.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">¥{data.totalSavings.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">{data.savingsRate.toFixed(1)}%</TableCell>
-                        </TableRow>
-                      ))}
+                      {netWorthData.map((data, index) => {
+                        const prevNetWorth = index > 0 ? netWorthData[index - 1].netWorth : null;
+                        const growth = prevNetWorth ? ((data.netWorth - prevNetWorth) / prevNetWorth) * 100 : null;
+                        
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>{data.year}</TableCell>
+                            <TableCell className="text-right">¥{data.assets.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">¥{data.liabilities.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">¥{data.netWorth.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">
+                              {growth !== null ? (
+                                <span className={growth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {growth >= 0 ? '+' : ''}{growth.toFixed(1)}%
+                                </span>
+                              ) : '-'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
               </div>
 
-              {/* レポート要約 */}
-              <div className="lg:col-span-2">
-                <h3 className="text-lg font-medium mb-4">レポート要約</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <div className="text-sm text-gray-500">5年間総収入</div>
-                      <div className="text-2xl font-bold">
-                        ¥{yearlyFinancials.reduce((sum, data) => sum + data.totalIncome, 0).toLocaleString()}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">5年間総支出</div>
-                      <div className="text-2xl font-bold">
-                        ¥{yearlyFinancials.reduce((sum, data) => sum + data.totalExpenses, 0).toLocaleString()}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">5年間総貯蓄</div>
-                      <div className="text-2xl font-bold text-green-600">
-                        ¥{yearlyFinancials.reduce((sum, data) => sum + data.totalSavings, 0).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <div className="text-sm text-gray-500">5年間平均貯蓄率</div>
-                    <div className="text-2xl font-bold">
-                      {(
-                        (yearlyFinancials.reduce((sum, data) => sum + data.totalSavings, 0) /
-                          yearlyFinancials.reduce((sum, data) => sum + data.totalIncome, 0)) *
-                        100
-                      ).toFixed(1)}
-                      %
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {reportType === 'category' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>カテゴリ別支出分析</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* カテゴリ円グラフ */}
-              <div>
-                <h3 className="text-lg font-medium mb-4">カテゴリ別支出割合</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={categoryExpenses}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={true}
-                        label={({name, percent}) => `${name} (${(percent * 100).toFixed(1)}%)`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="amount"
-                        nameKey="category"
-                      >
-                        {categoryExpenses.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* カテゴリ棒グラフ */}
-              <div>
-                <h3 className="text-lg font-medium mb-4">カテゴリ別支出金額</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={categoryExpenses}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="category" type="category" width={80} />
-                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
-                      <Bar dataKey="amount" name="支出額">
-                        {categoryExpenses.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* カテゴリ詳細テーブル */}
-              <div className="lg:col-span-2">
-                <h3 className="text-lg font-medium mb-4">カテゴリ詳細</h3>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>カテゴリ</TableHead>
-                        <TableHead className="text-right">支出額</TableHead>
-                        <TableHead className="text-right">割合</TableHead>
-                        <TableHead className="text-right">月平均</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {categoryExpenses.map((data, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            <div className="flex items-center">
-                              <span
-                                className="inline-block w-3 h-3 mr-2 rounded-full"
-                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                              ></span>
-                              {data.category}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">¥{data.amount.toLocaleString()}</TableCell>
-                          <TableCell className="text-right">{data.percentage.toFixed(1)}%</TableCell>
-                          <TableCell className="text-right">¥{Math.round(data.amount / 12).toLocaleString()}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-
-              {/* レポート要約 */}
+              {/* Report Summary */}
               <div className="lg:col-span-2">
                 <h3 className="text-lg font-medium mb-4">レポート要約</h3>
                 <div className="bg-gray-50 p-4 rounded-lg">
@@ -530,6 +396,7 @@ export default function ReportsPage() {
         </Card>
       )}
 
+      {/* Net Worth Report */}
       {reportType === 'networth' && (
         <Card>
           <CardHeader>
@@ -537,7 +404,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* 純資産推移グラフ */}
+              {/* Net Worth Transition Chart */}
               <div className="lg:col-span-2">
                 <h3 className="text-lg font-medium mb-4">純資産推移</h3>
                 <div className="h-80">
@@ -578,7 +445,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* 純資産詳細テーブル */}
+              {/* Net Worth Detail Table */}
               <div className="lg:col-span-2">
                 <h3 className="text-lg font-medium mb-4">純資産詳細</h3>
                 <div className="overflow-x-auto">
@@ -618,7 +485,517 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* レポート要約 */}
+              {/* Net Worth Summary */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">レポート要約</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-gray-500">現在の総資産</div>
+                      <div className="text-2xl font-bold">
+                        ¥{netWorthData[netWorthData.length - 1].assets.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">現在の総負債</div>
+                      <div className="text-2xl font-bold">
+                        ¥{netWorthData[netWorthData.length - 1].liabilities.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">現在の純資産</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        ¥{netWorthData[netWorthData.length - 1].netWorth.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-sm text-gray-500">5年間の純資産成長率</div>
+                    <div className="text-2xl font-bold">
+                      {(
+                        ((netWorthData[netWorthData.length - 1].netWorth - netWorthData[0].netWorth) /
+                          Math.abs(netWorthData[0].netWorth)) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportType === 'category' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>カテゴリ別支出分析</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Category Pie Chart */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">カテゴリ別支出割合</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryExpenses}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(1)}%)`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="amount"
+                        nameKey="category"
+                      >
+                        {categoryExpenses.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Category Bar Chart */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">カテゴリ別支出金額</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={categoryExpenses}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="category" type="category" width={80} />
+                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
+                      <Bar dataKey="amount" name="支出額">
+                        {categoryExpenses.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Category Detail Table */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">カテゴリ詳細</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>カテゴリ</TableHead>
+                        <TableHead className="text-right">支出額</TableHead>
+                        <TableHead className="text-right">割合</TableHead>
+                        <TableHead className="text-right">月平均</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {categoryExpenses.map((data, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <span
+                                className="inline-block w-3 h-3 mr-2 rounded-full"
+                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                              ></span>
+                              {data.category}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">¥{data.amount.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{data.percentage.toFixed(1)}%</TableCell>
+                          <TableCell className="text-right">¥{Math.round(data.amount / 12).toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Report Summary */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">レポート要約</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-gray-500">年間総支出</div>
+                      <div className="text-2xl font-bold">
+                        ¥{categoryExpenses.reduce((sum, data) => sum + data.amount, 0).toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">月平均支出</div>
+                      <div className="text-2xl font-bold">
+                        ¥{Math.round(categoryExpenses.reduce((sum, data) => sum + data.amount, 0) / 12).toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">最大支出カテゴリ</div>
+                      <div className="text-2xl font-bold">
+                        {categoryExpenses.sort((a, b) => b.amount - a.amount)[0].category}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Net Worth Report */}
+      {reportType === 'networth' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>純資産推移レポート</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Net Worth Transition Chart */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">純資産推移</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={netWorthData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="year" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="assets"
+                        name="資産"
+                        stackId="1"
+                        stroke="#8884d8"
+                        fill="#8884d8"
+                        fillOpacity={0.6}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="liabilities"
+                        name="負債"
+                        stackId="2"
+                        stroke="#ff7f7f"
+                        fill="#ff7f7f"
+                        fillOpacity={0.6}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="netWorth"
+                        name="純資産"
+                        stroke="#82ca9d"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Net Worth Detail Table */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">純資産詳細</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>年</TableHead>
+                        <TableHead className="text-right">資産</TableHead>
+                        <TableHead className="text-right">負債</TableHead>
+                        <TableHead className="text-right">純資産</TableHead>
+                        <TableHead className="text-right">前年比</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {netWorthData.map((data, index) => {
+                        const prevNetWorth = index > 0 ? netWorthData[index - 1].netWorth : null;
+                        const growth = prevNetWorth ? ((data.netWorth - prevNetWorth) / prevNetWorth) * 100 : null;
+                        
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>{data.year}</TableCell>
+                            <TableCell className="text-right">¥{data.assets.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">¥{data.liabilities.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">¥{data.netWorth.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">
+                              {growth !== null ? (
+                                <span className={growth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {growth >= 0 ? '+' : ''}{growth.toFixed(1)}%
+                                </span>
+                              ) : '-'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Net Worth Summary */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">レポート要約</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-gray-500">現在の総資産</div>
+                      <div className="text-2xl font-bold">
+                        ¥{netWorthData[netWorthData.length - 1].assets.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">現在の総負債</div>
+                      <div className="text-2xl font-bold">
+                        ¥{netWorthData[netWorthData.length - 1].liabilities.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">現在の純資産</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        ¥{netWorthData[netWorthData.length - 1].netWorth.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="text-sm text-gray-500">5年間の純資産成長率</div>
+                    <div className="text-2xl font-bold">
+                      {(
+                        ((netWorthData[netWorthData.length - 1].netWorth - netWorthData[0].netWorth) /
+                          Math.abs(netWorthData[0].netWorth)) *
+                        100
+                      ).toFixed(1)}
+                      %
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reportType === 'category' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>カテゴリ別支出分析</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Category Pie Chart */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">カテゴリ別支出割合</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={categoryExpenses}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(1)}%)`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="amount"
+                        nameKey="category"
+                      >
+                        {categoryExpenses.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Category Bar Chart */}
+              <div>
+                <h3 className="text-lg font-medium mb-4">カテゴリ別支出金額</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={categoryExpenses}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="category" type="category" width={80} />
+                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
+                      <Bar dataKey="amount" name="支出額">
+                        {categoryExpenses.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Category Detail Table */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">カテゴリ詳細</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>カテゴリ</TableHead>
+                        <TableHead className="text-right">支出額</TableHead>
+                        <TableHead className="text-right">割合</TableHead>
+                        <TableHead className="text-right">月平均</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {categoryExpenses.map((data, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <span
+                                className="inline-block w-3 h-3 mr-2 rounded-full"
+                                style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                              ></span>
+                              {data.category}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">¥{data.amount.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">{data.percentage.toFixed(1)}%</TableCell>
+                          <TableCell className="text-right">¥{Math.round(data.amount / 12).toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Report Summary */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">レポート要約</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-gray-500">年間総支出</div>
+                      <div className="text-2xl font-bold">
+                        ¥{categoryExpenses.reduce((sum, data) => sum + data.amount, 0).toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">月平均支出</div>
+                      <div className="text-2xl font-bold">
+                        ¥{Math.round(categoryExpenses.reduce((sum, data) => sum + data.amount, 0) / 12).toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">最大支出カテゴリ</div>
+                      <div className="text-2xl font-bold">
+                        {categoryExpenses.sort((a, b) => b.amount - a.amount)[0].category}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Net Worth Report */}
+      {reportType === 'networth' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>純資産推移レポート</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Net Worth Transition Chart */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">純資産推移</h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={netWorthData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="year" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
+                      <Legend />
+                      <Area
+                        type="monotone"
+                        dataKey="assets"
+                        name="資産"
+                        stackId="1"
+                        stroke="#8884d8"
+                        fill="#8884d8"
+                        fillOpacity={0.6}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="liabilities"
+                        name="負債"
+                        stackId="2"
+                        stroke="#ff7f7f"
+                        fill="#ff7f7f"
+                        fillOpacity={0.6}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="netWorth"
+                        name="純資産"
+                        stroke="#82ca9d"
+                        strokeWidth={2}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Net Worth Detail Table */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-medium mb-4">純資産詳細</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>年</TableHead>
+                        <TableHead className="text-right">資産</TableHead>
+                        <TableHead className="text-right">負債</TableHead>
+                        <TableHead className="text-right">純資産</TableHead>
+                        <TableHead className="text-right">前年比</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {netWorthData.map((data, index) => {
+                        const prevNetWorth = index > 0 ? netWorthData[index - 1].netWorth : null;
+                        const growth = prevNetWorth ? ((data.netWorth - prevNetWorth) / prevNetWorth) * 100 : null;
+                        
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>{data.year}</TableCell>
+                            <TableCell className="text-right">¥{data.assets.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">¥{data.liabilities.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">¥{data.netWorth.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">
+                              {growth !== null ? (
+                                <span className={growth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {growth >= 0 ? '+' : ''}{growth.toFixed(1)}%
+                                </span>
+                              ) : '-'}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Net Worth Summary */}
               <div className="lg:col-span-2">
                 <h3 className="text-lg font-medium mb-4">レポート要約</h3>
                 <div className="bg-gray-50 p-4 rounded-lg">

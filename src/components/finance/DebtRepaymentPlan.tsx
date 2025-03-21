@@ -111,14 +111,11 @@ const calculateMonthlyPayment = (totalAmount: number, annualRate: number, years:
   const customAxisTick = (props: any) => {
     const { x, y, payload } = props;
     const month = payload.value.split('ヶ')[0];
-    if (month % 6 === 0) {
-      return (
-        <text x={x} y={y + 15} textAnchor="middle" fill="#666">
-          {month}ヶ月目
-        </text>
-      );
-    }
-    return null;
+    return (
+      <text x={x} y={y + 15} textAnchor="middle" fill="#666">
+        {month % 6 === 0 ? `${month}ヶ月目` : ''}
+      </text>
+    );
   };
 
   return (
@@ -239,7 +236,7 @@ const calculateMonthlyPayment = (totalAmount: number, annualRate: number, years:
             />
             <YAxis />
             <Tooltip 
-              formatter={(value) => `¥${Math.round(value).toLocaleString()}`}
+              formatter={(value) => `¥${Math.round(Number(value)).toLocaleString()}`}
               labelFormatter={(label) => `${label}`}
             />
             <Legend />
@@ -270,7 +267,7 @@ const calculateMonthlyPayment = (totalAmount: number, annualRate: number, years:
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
-            <Tooltip formatter={(value) => `¥${Math.round(value).toLocaleString()}`} />
+            <Tooltip formatter={(value) => `¥${Math.round(Number(value)).toLocaleString()}`} />
             <Legend />
             <Bar dataKey="principal" name="元金" fill="#8884d8" stackId="a" />
             <Bar dataKey="interest" name="利息" fill="#ffc658" stackId="a" />

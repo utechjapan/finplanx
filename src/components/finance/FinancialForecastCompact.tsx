@@ -92,7 +92,7 @@ const FinancialForecastCompact = () => {
   ];
 
   // タブの切り替え
-  const Tab = ({ active, onClick, children }) => (
+  const Tab: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
       className={`px-4 py-2 font-semibold rounded-t-lg ${
         active ? 'bg-blue-500 text-white' : 'bg-gray-200'

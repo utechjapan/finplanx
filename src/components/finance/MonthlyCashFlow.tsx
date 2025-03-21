@@ -88,7 +88,7 @@ const MonthlyCashFlow = () => {
 
   // 年ごとにデータを分割
   const yearLabels = ['1年目', '2年目', '3年目', '4年目', '5年目'];
-  const yearlyDataSets = {};
+  const yearlyDataSets: { [key: string]: typeof monthlyCashFlowData } = {};
   
   yearLabels.forEach((yearLabel, index) => {
     const startIndex = index * 12;
@@ -97,9 +97,9 @@ const MonthlyCashFlow = () => {
 
   const [selectedYears, setSelectedYears] = useState(yearLabels);
 
-  const toggleYear = (year) => {
+  const toggleYear = (year: string): void => {
     if (selectedYears.includes(year)) {
-      setSelectedYears(selectedYears.filter(y => y !== year));
+      setSelectedYears(selectedYears.filter((y: string) => y !== year));
     } else {
       setSelectedYears([...selectedYears, year]);
     }
@@ -109,7 +109,7 @@ const MonthlyCashFlow = () => {
   const monthNames = ['5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月', '1月', '2月', '3月', '4月'];
 
   // データテーブル表示用
-  const MonthlyDataTable = ({ data }) => {
+  const MonthlyDataTable = ({ data }: { data: typeof monthlyCashFlowData }) => {
     return (
       <div className="w-full overflow-x-auto mb-8">
         <table className="min-w-full border border-gray-300">
@@ -175,18 +175,17 @@ const MonthlyCashFlow = () => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="label" 
-              tick={({ x, y, payload }) => {
-                // 6か月ごとに表示するようにする
+              tick={(props) => {
+                const { x, y, payload } = props;
                 const index = payload.index;
                 const showLabel = (index % 6 === 0);
-                if (showLabel) {
-                  return (
-                    <text x={x} y={y + 15} textAnchor="middle" fill="#666">
-                      {payload.value}
-                    </text>
-                  );
-                }
-                return null;
+                return showLabel ? (
+                  <text x={x} y={y + 15} textAnchor="middle" fill="#666">
+                    {payload.value}
+                  </text>
+                ) : (
+                  <text x={x} y={y + 15} textAnchor="middle" fill="#666"></text>
+                );
               }}
             />
             <YAxis />
@@ -213,18 +212,15 @@ const MonthlyCashFlow = () => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
               dataKey="label" 
-              tick={({ x, y, payload }) => {
-                // 6か月ごとに表示するようにする
+              tick={(props) => {
+                const { x, y, payload } = props;
                 const index = payload.index;
                 const showLabel = (index % 6 === 0);
-                if (showLabel) {
-                  return (
-                    <text x={x} y={y + 15} textAnchor="middle" fill="#666">
-                      {payload.value}
-                    </text>
-                  );
-                }
-                return null;
+                return (
+                  <text x={x} y={y + 15} textAnchor="middle" fill="#666">
+                    {showLabel ? payload.value : ''}
+                  </text>
+                );
               }}
             />
             <YAxis />

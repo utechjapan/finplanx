@@ -1,4 +1,3 @@
-// lib/auth.ts
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -19,7 +18,7 @@ export const isDevMode = () => {
   return process.env.NODE_ENV !== "production" || process.env.DEMO_MODE === "1";
 };
 
-// Demo users for development and demo environments
+// Demo users for development and demo environments (not used in production)
 export const demoUsers = [
   {
     id: "demo-user-1",
@@ -285,10 +284,9 @@ export async function registerUser(name: string, email: string, password: string
   }
 }
 
-// Generate email verification token
-export async function generateEmailVerificationToken(email: string) {
+// Generate email verification token (used for resending verification emails)
+export async function generateEmailVerificationTokenForResend(email: string) {
   if (isDevMode()) {
-    // In demo mode, just simulate token generation
     return {
       success: true,
       token: "demo-verification-" + Date.now(),
@@ -343,7 +341,6 @@ export async function generateEmailVerificationToken(email: string) {
 // Verify email with token
 export async function verifyEmail(token: string) {
   if (isDevMode()) {
-    // In demo mode, just simulate verification
     return {
       success: true,
       message: "メールアドレスが確認されました",
@@ -390,7 +387,6 @@ export async function verifyEmail(token: string) {
 // Helper function for password reset
 export async function generatePasswordResetToken(email: string) {
   if (isDevMode()) {
-    // In demo mode, just simulate token generation
     return {
       success: true,
       token: "demo-token-" + Date.now(),
@@ -401,7 +397,6 @@ export async function generatePasswordResetToken(email: string) {
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      // We don't want to reveal if a user exists or not for security
       return {
         success: true,
         message: "パスワードリセットリンクを送信しました（メールアドレスが登録されている場合）",
@@ -445,7 +440,6 @@ export async function generatePasswordResetToken(email: string) {
 // Helper function to reset password with token
 export async function resetPassword(token: string, newPassword: string) {
   if (isDevMode()) {
-    // In demo mode, just simulate password reset
     return {
       success: true,
       message: "パスワードがリセットされました",
@@ -457,7 +451,7 @@ export async function resetPassword(token: string, newPassword: string) {
     const resetRecord = await prisma.passwordReset.findFirst({
       where: {
         token,
-        expiresAt: { gt: new Date() }, // Token must not be expired
+        expiresAt: { gt: new Date() },
       },
       include: { user: true },
     });
