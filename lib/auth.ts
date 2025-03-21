@@ -35,11 +35,10 @@ export const demoUsers = [
 ];
 
 export const authOptions: NextAuthOptions = {
-  // Use Prisma adapter for database session storage when not in demo mode
+  // Use Prisma adapter in production mode
   ...(isDevMode() ? {} : { adapter: PrismaAdapter(prisma) }),
 
   providers: [
-    // Credentials provider for email/password login
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -102,7 +101,7 @@ export const authOptions: NextAuthOptions = {
           // Send login notification email (in production)
           if (!isDevMode()) {
             try {
-              // Cast email as non-null and provide a fallback for name
+              // Cast email as non-null and provide fallback for name
               await sendLoginNotificationEmail(user.email!, user.name || "Unknown User");
             } catch (emailError) {
               console.error("Failed to send login notification email:", emailError);
@@ -122,13 +121,11 @@ export const authOptions: NextAuthOptions = {
       },
     }),
 
-    // Add Google provider
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
 
-    // Add GitHub provider
     GitHubProvider({
       clientId: process.env.GITHUB_ID || "",
       clientSecret: process.env.GITHUB_SECRET || "",
@@ -154,6 +151,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
+
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
@@ -162,19 +160,17 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
+
     async signIn({ user, account, profile }) {
       if (isDevMode() && account && (account.provider === "google" || account.provider === "github")) {
         return true;
       }
-
       if (account && account.provider === "google") {
         return true;
       }
-
       if (account && account.provider === "github") {
         return true;
       }
-
       return true;
     },
   },
@@ -195,10 +191,7 @@ export async function registerUser(name: string, email: string, password: string
     console.log("Demo mode: Simulating successful user registration for", email);
     const existingDemoUser = demoUsers.find((user) => user.email === email);
     if (existingDemoUser) {
-      return {
-        success: false,
-        error: "このメールアドレスは既に登録されています",
-      };
+      return { success: false, error: "このメールアドレスは既に登録されています" };
     }
     return {
       success: true,
@@ -206,8 +199,8 @@ export async function registerUser(name: string, email: string, password: string
         id: "demo-" + Date.now(),
         name,
         email,
-        createdAt: new Date(),
       },
+      message: "アカウントが作成されました。メールアドレスの確認を行ってください。",
     };
   }
 
@@ -241,7 +234,7 @@ export async function registerUser(name: string, email: string, password: string
         id: user.id,
         name: user.name,
         email: user.email,
-        createdAt: user.createdAt,
+        createdAt: user.createdAt, // Now available from the schema
       },
       message: "アカウントが作成されました。メールアドレスの確認を行ってください。",
     };
@@ -282,9 +275,7 @@ export async function verifyEmail(token: string) {
   }
 
   try {
-    const user = await prisma.user.findFirst({
-      where: { verificationToken: token },
-    });
+    const user = await prisma.user.findFirst({ where: { verificationToken: token } });
     if (!user) {
       return { success: false, error: "無効または期限切れのトークンです" };
     }
