@@ -1,4 +1,3 @@
-// app/login/page.tsx - Fixed for social logins
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -78,8 +77,6 @@ export default function LoginPage() {
   const handleSocialLogin = async (provider: string) => {
     setSocialLoading(provider);
     try {
-      // In development, we can just use a direct signin with no redirect
-      // This works because our auth.ts is configured to use demo users in dev mode
       await signIn(provider, { 
         callbackUrl: '/dashboard',
       });

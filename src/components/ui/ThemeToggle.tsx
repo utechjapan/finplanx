@@ -1,4 +1,3 @@
-// src/components/ui/ThemeToggle.tsx - Fixed
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -33,10 +32,12 @@ export function ThemeToggle() {
 
   // Function to apply theme
   const applyTheme = (newTheme: 'light' | 'dark') => {
+    const root = document.documentElement;
+    
     if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
     }
   };
 
@@ -49,7 +50,7 @@ export function ThemeToggle() {
 
   // Don't render until component is mounted to prevent hydration mismatch
   if (!mounted) {
-    return null;
+    return <div className="w-10 h-10"></div>; // Placeholder with same dimensions
   }
 
   return (

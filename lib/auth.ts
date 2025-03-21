@@ -1,4 +1,4 @@
-// lib/auth.ts - Fixed for local development
+// lib/auth.ts
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -27,9 +27,6 @@ export const demoUsers = [
     password: "admin123",
   },
 ];
-
-// Log the mode on startup for debugging
-console.log(`Auth mode: ${isDevMode() ? 'DEMO/DEV MODE' : 'PRODUCTION MODE'}`);
 
 export const authOptions: NextAuthOptions = {
   // Use Prisma adapter for database session storage when not in demo mode
@@ -112,22 +109,23 @@ export const authOptions: NextAuthOptions = {
       },
     }),
 
-    // Add Google provider with dummy credentials for development
+    // Add Google provider
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "GOOGLE-ID-PLACEHOLDER",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "GOOGLE-SECRET-PLACEHOLDER",
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
 
-    // Add GitHub provider with dummy credentials for development
+    // Add GitHub provider
     GitHubProvider({
-      clientId: process.env.GITHUB_ID || "GITHUB-ID-PLACEHOLDER",
-      clientSecret: process.env.GITHUB_SECRET || "GITHUB-SECRET-PLACEHOLDER",
+      clientId: process.env.GITHUB_ID || "",
+      clientSecret: process.env.GITHUB_SECRET || "",
     }),
   ],
   
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+  pages: {
+    signIn: "/login",
+    signOut: "/",
+    error: "/login",
   },
   
   callbacks: {
@@ -155,24 +153,35 @@ export const authOptions: NextAuthOptions = {
     },
 
     // Add additional callback to handle sign-in from OAuth providers in dev mode
-    async signIn({ user, account }) {
-      // In dev mode, always succeed OAuth sign-ins and use demo user data
+    async signIn({ user, account, profile }) {
+      // In dev mode, always succeed OAuth sign-ins
       if (isDevMode() && account && (account.provider === 'google' || account.provider === 'github')) {
-        console.log(`Demo mode: OAuth sign-in from ${account.provider} provider`);
         return true;
       }
+
+      // For production environments, handle the OAuth providers
+      if (account && account.provider === "google") {
+        // Custom logic for Google sign-in if needed
+        return true;
+      }
+
+      if (account && account.provider === "github") {
+        // Custom logic for GitHub sign-in if needed
+        return true;
+      }
+
       return true;
     }
   },
   
-  pages: {
-    signIn: "/login",
-    signOut: "/",
-    error: "/login",
-  },
-  
   // Debug mode in development
   debug: process.env.NODE_ENV === "development",
+
+  // Set the session strategy to JWT
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
 
   // Use a consistent secret across environments
   secret: process.env.NEXTAUTH_SECRET || "development-secret-key",

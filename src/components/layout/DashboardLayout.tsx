@@ -1,11 +1,10 @@
-// src/components/layout/DashboardLayout.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
-import { 
+import {
   LayoutDashboard,
   CreditCard,
   TrendingUp,
@@ -17,7 +16,7 @@ import {
   Menu,
   X,
   User,
-  Bell
+  Bell,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/Button';
@@ -34,6 +33,8 @@ const navItems = [
   { href: '/debt-repayment', label: '借金返済計画', icon: CreditCard },
   { href: '/investments', label: '資産形成', icon: TrendingUp },
   { href: '/reports', label: 'レポート', icon: BarChart2 },
+  { href: '/profile', label: 'プロフィール', icon: User },
+  { href: '/settings', label: '設定', icon: Settings },
 ];
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
@@ -85,7 +86,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex overflow-hidden">
+    <div className="h-screen flex overflow-hidden bg-gray-100 dark:bg-gray-900">
       {/* Mobile sidebar toggle */}
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <Button
@@ -109,8 +110,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="absolute inset-0 bg-gray-600 dark:bg-gray-900 opacity-75" onClick={() => setSidebarOpen(false)}></div>
-            
+            <div
+              className="absolute inset-0 bg-gray-600 dark:bg-gray-900 opacity-75"
+              onClick={() => setSidebarOpen(false)}
+            ></div>
             <motion.nav
               className="relative flex flex-col w-72 max-w-xs bg-white dark:bg-gray-800 h-full"
               initial={{ x: -280 }}
@@ -128,12 +131,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   </Link>
                   <ThemeToggle />
                 </div>
-                
                 <div className="flex-1 px-2 space-y-1">
                   {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     const Icon = item.icon;
-                    
                     return (
                       <Link
                         key={item.href}
@@ -145,25 +146,32 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                         }`}
                         onClick={() => setSidebarOpen(false)}
                       >
-                        <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                        <Icon
+                          className={`mr-3 h-5 w-5 ${
+                            isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
+                          }`}
+                        />
                         {item.label}
                       </Link>
                     );
                   })}
                 </div>
               </div>
-              
               <div className="border-t border-gray-200 dark:border-gray-700 p-4">
                 <div className="flex items-center space-x-3">
                   <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400">
                     <User size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{currentUser.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser.email}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {currentUser.name}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {currentUser.email}
+                    </p>
                   </div>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="icon"
                     className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                     onClick={handleLogout}
@@ -190,13 +198,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               </Link>
               <ThemeToggle />
             </div>
-            
             <div className="flex-1 flex flex-col overflow-y-auto pt-5 pb-4">
               <nav className="flex-1 px-2 space-y-1">
                 {navItems.map((item) => {
                   const isActive = pathname === item.href;
                   const Icon = item.icon;
-                  
                   return (
                     <Link
                       key={item.href}
@@ -207,25 +213,32 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400'
                       }`}
                     >
-                      <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`} />
+                      <Icon
+                        className={`mr-3 h-5 w-5 ${
+                          isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                      />
                       {item.label}
                     </Link>
                   );
                 })}
               </nav>
             </div>
-            
             <div className="border-t border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center space-x-3">
                 <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-400">
                   <User size={20} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{currentUser.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{currentUser.email}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {currentUser.name}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {currentUser.email}
+                  </p>
                 </div>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="icon"
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                   onClick={handleLogout}
@@ -245,7 +258,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="flex-1 px-4 flex justify-between">
             <div className="flex-1 flex items-center">
               <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {navItems.find(item => item.href === pathname)?.label || 'ダッシュボード'}
+                {navItems.find((item) => item.href === pathname)?.label || 'ダッシュボード'}
               </h1>
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-3">
@@ -261,11 +274,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   }}
                 >
                   <Bell size={20} />
-                  {notifications.some(n => !n.read) && (
+                  {notifications.some((n) => !n.read) && (
                     <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500"></span>
                   )}
                 </Button>
-                
                 {/* Notifications dropdown */}
                 <AnimatePresence>
                   {notificationsOpen && (
@@ -284,10 +296,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                           notifications.map((notification) => (
                             <div
                               key={notification.id}
-                              className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                              className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                                !notification.read ? 'bg-blue-50 dark:bg-blue-900/30' : ''
+                              }`}
                             >
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{notification.title}</p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{notification.date}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {notification.title}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {notification.date}
+                              </p>
                             </div>
                           ))
                         ) : (
@@ -297,7 +315,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                         )}
                       </div>
                       <div className="py-2 px-3 border-t border-gray-100 dark:border-gray-700 text-center">
-                        <Link href="#" className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
+                        <Link
+                          href="#"
+                          className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
+                        >
                           すべて見る
                         </Link>
                       </div>
@@ -305,7 +326,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   )}
                 </AnimatePresence>
               </div>
-              
               {/* User menu */}
               <div className="relative">
                 <Button
@@ -321,7 +341,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                   <User size={20} />
                   <span className="hidden md:inline-block">{currentUser.name}</span>
                 </Button>
-                
                 {/* User dropdown */}
                 <AnimatePresence>
                   {userMenuOpen && (
@@ -333,22 +352,22 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                       transition={{ duration: 0.1 }}
                     >
                       <div className="py-1">
-                        <Link 
-                          href="/profile" 
+                        <Link
+                          href="/profile"
                           className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           プロフィール
                         </Link>
-                        <Link 
-                          href="/settings" 
+                        <Link
+                          href="/settings"
                           className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                           onClick={() => setUserMenuOpen(false)}
                         >
                           設定
                         </Link>
                         <div className="border-t border-gray-100 dark:border-gray-700"></div>
-                        <button 
+                        <button
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                           onClick={() => {
                             setUserMenuOpen(false);

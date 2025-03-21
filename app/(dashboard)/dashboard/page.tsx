@@ -46,7 +46,7 @@ const expenseCategories = [
   { name: 'その他', value: 45000, color: '#ffc658' }
 ];
 
-const DashboardPage = () => {
+export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">ダッシュボード</h1>
@@ -203,6 +203,3 @@ const DashboardPage = () => {
       </div>
     </div>
   );
-};
-
-export default DashboardPage;

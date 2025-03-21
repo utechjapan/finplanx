@@ -1,8 +1,7 @@
-// app/investments/layout.tsx
 import React from 'react';
 import DashboardLayout from '@/src/components/layout/DashboardLayout';
 
-export default function InvestmentsLayout({
+export default function DashboardPageLayout({
   children,
 }: {
   children: React.ReactNode;
