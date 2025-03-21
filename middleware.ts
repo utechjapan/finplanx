@@ -3,37 +3,34 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-// 認証が必要ないパス
+// Public paths that don't require authentication
 const publicPaths = [
   '/',
   '/login',
   '/register',
+  '/forgot-password',
+  '/reset-password',
   '/demo',
   '/api/auth',
   '/api/register',
+  '/api/password-reset',
+  '/api/contact',
   '/terms',
   '/privacy',
   '/contact',
   '/faq',
-  '/icons', // For static assets
-  '/avatars', // For static assets
 ];
 
-// この関数はミドルウェアとして実行される
+// This function is the middleware
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Special case for static files
+  // Allow static files and Next.js internals
   if (pathname.includes('.') || pathname.startsWith('/_next')) {
     return NextResponse.next();
   }
   
-  // Dev/Demo mode - allow all access
-  if (process.env.NODE_ENV !== 'production' || process.env.DEMO_MODE === '1') {
-    return NextResponse.next();
-  }
-  
-  // Always allow dashboard access if demo cookie exists
+  // Check for demo mode cookie
   const hasDemoCookie = request.cookies.has('demo_mode');
   if (hasDemoCookie) {
     return NextResponse.next();
@@ -51,13 +48,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // JWT トークンを取得
+  // Get JWT token
   const token = await getToken({ 
     req: request,
     secret: process.env.NEXTAUTH_SECRET 
   });
   
-  // Not authenticated - redirect to login
+  // If not authenticated, redirect to login
   if (!token) {
     const url = new URL('/login', request.url);
     url.searchParams.set('callbackUrl', encodeURI(pathname));
@@ -68,7 +65,7 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Matcher - apply middleware only to these paths
+// Apply middleware only to these paths
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico).*)',

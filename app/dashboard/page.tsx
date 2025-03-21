@@ -1,64 +1,158 @@
 'use client';
 
-import React from 'react';
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
-
-// サンプルデータ
-const monthlyData = [
-  { month: '1月', income: 300000, expenses: 220000, savings: 80000 },
-  { month: '2月', income: 300000, expenses: 210000, savings: 90000 },
-  { month: '3月', income: 300000, expenses: 230000, savings: 70000 },
-  { month: '4月', income: 300000, expenses: 225000, savings: 75000 },
-  { month: '5月', income: 320000, expenses: 235000, savings: 85000 },
-  { month: '6月', income: 620000, expenses: 240000, savings: 380000 },
-];
-
-const savingsData = [
-  { month: '1月', amount: 80000, total: 80000 },
-  { month: '2月', amount: 90000, total: 170000 },
-  { month: '3月', amount: 70000, total: 240000 },
-  { month: '4月', amount: 75000, total: 315000 },
-  { month: '5月', amount: 85000, total: 400000 },
-  { month: '6月', amount: 380000, total: 780000 },
-];
-
-const expenseCategories = [
-  { name: '住居費', value: 80000, color: '#8884d8' },
-  { name: '食費', value: 50000, color: '#83a6ed' },
-  { name: '通信費', value: 12000, color: '#8dd1e1' },
-  { name: '光熱費', value: 15000, color: '#82ca9d' },
-  { name: '交通費', value: 18000, color: '#a4de6c' },
-  { name: 'その他', value: 45000, color: '#ffc658' }
-];
+import { Button } from '@/src/components/ui/Button';
+import { Input } from '@/src/components/ui/Input';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export default function DashboardPage() {
+  // User input states
+  const [income, setIncome] = useState<number>(0);
+  const [expenses, setExpenses] = useState<number>(0);
+  const [savings, setSavings] = useState<number>(0);
+  
+  // Form input states
+  const [incomeInput, setIncomeInput] = useState<string>('');
+  const [expenseInput, setExpenseInput] = useState<string>('');
+  
+  // Monthly data state with empty initial values
+  const [monthlyData, setMonthlyData] = useState([
+    { month: '今月', income: 0, expenses: 0, savings: 0 }
+  ]);
+  
+  // Empty initial expense categories
+  const [expenseCategories, setExpenseCategories] = useState<{ name: string; value: number; color: string }[]>([]);
+  
+  // For adding a new expense category
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryAmount, setNewCategoryAmount] = useState('');
+  
+  // Colors for pie chart
+  const COLORS = ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d', '#a4de6c', '#ffc658', '#ff8042'];
+  
+  // Update income
+  const handleIncomeUpdate = () => {
+    const newIncome = parseFloat(incomeInput);
+    if (!isNaN(newIncome) && newIncome >= 0) {
+      setIncome(newIncome);
+      updateMonthlySummary(newIncome, expenses);
+      setIncomeInput('');
+    }
+  };
+  
+  // Update expense
+  const handleExpenseUpdate = () => {
+    const newExpense = parseFloat(expenseInput);
+    if (!isNaN(newExpense) && newExpense >= 0) {
+      setExpenses(newExpense);
+      updateMonthlySummary(income, newExpense);
+      setExpenseInput('');
+    }
+  };
+  
+  // Add expense category
+  const addExpenseCategory = () => {
+    const amount = parseFloat(newCategoryAmount);
+    if (newCategoryName && !isNaN(amount) && amount > 0) {
+      const newCategory = {
+        name: newCategoryName,
+        value: amount,
+        color: COLORS[expenseCategories.length % COLORS.length]
+      };
+      
+      const updatedCategories = [...expenseCategories, newCategory];
+      setExpenseCategories(updatedCategories);
+      
+      // Update total expenses
+      const totalExpenses = updatedCategories.reduce((sum, cat) => sum + cat.value, 0);
+      setExpenses(totalExpenses);
+      updateMonthlySummary(income, totalExpenses);
+      
+      // Reset inputs
+      setNewCategoryName('');
+      setNewCategoryAmount('');
+    }
+  };
+  
+  // Update monthly summary
+  const updateMonthlySummary = (newIncome: number, newExpenses: number) => {
+    const newSavings = newIncome - newExpenses;
+    setSavings(newSavings);
+    
+    setMonthlyData([
+      { month: '今月', income: newIncome, expenses: newExpenses, savings: newSavings }
+    ]);
+  };
+  
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">ダッシュボード</h1>
       
+      {/* Input section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>あなたの財務情報を入力</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">収入</h3>
+              <div className="flex space-x-2">
+                <Input
+                  type="number"
+                  placeholder="月収を入力"
+                  value={incomeInput}
+                  onChange={(e) => setIncomeInput(e.target.value)}
+                />
+                <Button onClick={handleIncomeUpdate}>更新</Button>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">支出</h3>
+              <div className="flex space-x-2">
+                <Input
+                  type="number"
+                  placeholder="総支出を入力"
+                  value={expenseInput}
+                  onChange={(e) => setExpenseInput(e.target.value)}
+                />
+                <Button onClick={handleExpenseUpdate}>更新</Button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <h3 className="text-lg font-medium mb-3">支出カテゴリを追加</h3>
+            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+              <Input
+                placeholder="カテゴリ名"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="flex-1"
+              />
+              <Input
+                type="number"
+                placeholder="金額"
+                value={newCategoryAmount}
+                onChange={(e) => setNewCategoryAmount(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={addExpenseCategory}>追加</Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>今月の収入</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">¥320,000</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">前月比: +6.7%</p>
+            <div className="text-3xl font-bold">¥{income.toLocaleString()}</div>
           </CardContent>
         </Card>
         
@@ -67,8 +161,7 @@ export default function DashboardPage() {
             <CardTitle>今月の支出</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">¥235,000</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">前月比: +4.4%</p>
+            <div className="text-3xl font-bold">¥{expenses.toLocaleString()}</div>
           </CardContent>
         </Card>
         
@@ -77,12 +170,14 @@ export default function DashboardPage() {
             <CardTitle>今月の貯蓄</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">¥85,000</div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">前月比: +13.3%</p>
+            <div className={`text-3xl font-bold ${savings < 0 ? 'text-red-500' : 'text-green-600'}`}>
+              ¥{savings.toLocaleString()}
+            </div>
           </CardContent>
         </Card>
       </div>
       
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -108,99 +203,76 @@ export default function DashboardPage() {
         
         <Card>
           <CardHeader>
-            <CardTitle>貯蓄の累計推移</CardTitle>
+            <CardTitle>支出カテゴリ</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={savingsData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="total" 
-                    name="累計貯蓄" 
-                    stroke="#8884d8" 
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {expenseCategories.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={expenseCategories}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={true}
+                      label={({name, percent}) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {expenseCategories.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  支出カテゴリを追加して詳細を確認しましょう
+                </div>
+              )}
             </div>
+            
+            {expenseCategories.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-medium mb-2">カテゴリ詳細</h4>
+                <div className="space-y-2">
+                  {expenseCategories.map((category, index) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <span 
+                          className="inline-block w-3 h-3 mr-2 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        ></span>
+                        <span>{category.name}</span>
+                      </div>
+                      <span>¥{category.value.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>支出カテゴリ</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={expenseCategories}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={true}
-                    label={({name, percent}) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {expenseCategories.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => `¥${value.toLocaleString()}`} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>今後のライフイベント</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-4">
-              <li className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div>
-                  <h3 className="font-medium">夏季ボーナス</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">2025年6月</p>
-                </div>
-                <span className="text-green-600 dark:text-green-400 font-medium">+¥380,000</span>
-              </li>
-              <li className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div>
-                  <h3 className="font-medium">国内旅行</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">2025年9月</p>
-                </div>
-                <span className="text-red-600 dark:text-red-400 font-medium">-¥80,000</span>
-              </li>
-              <li className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div>
-                  <h3 className="font-medium">国内旅行</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">2025年12月</p>
-                </div>
-                <span className="text-red-600 dark:text-red-400 font-medium">-¥80,000</span>
-              </li>
-              <li className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div>
-                  <h3 className="font-medium">フィリピン旅行</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">2027年1月</p>
-                </div>
-                <span className="text-red-600 dark:text-red-400 font-medium">-¥200,000</span>
-              </li>
+      <Card>
+        <CardHeader>
+          <CardTitle>次のステップ</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p>あなたの財務状況をより詳細に管理するために、以下のセクションをご利用ください：</p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li>「収支管理」で詳細な収入と支出を記録</li>
+              <li>「ライフプラン」で将来の財務目標を設定</li>
+              <li>「借金返済計画」で借金の返済スケジュールを管理</li>
+              <li>「資産形成」で投資戦略を立てる</li>
             </ul>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
