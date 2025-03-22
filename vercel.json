@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm install --save @types/react@18.2.47 @types/react-dom@18.2.18 @types/node --force && npm run build",
-  "installCommand": "npm install --force && npx prisma generate",
+  "buildCommand": "npm install --save-dev @types/react@18.2.47 @types/react-dom@18.2.18 --force && npm run build",
+  "installCommand": "npm install --force",
   "framework": null,
   "outputDirectory": ".next",
   "env": {
@@ -9,11 +9,5 @@
     "NEXT_TYPESCRIPT_COMPILE_ONLY_IF_PASSING": "false",
     "VERCEL_BUILD_SKIP_TYPESCRIPT": "1",
     "PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK": "1"
-  },
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ]
+  }
 }

@@ -4,17 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/build.js",
+    "build": "npm install --save-dev @types/react @types/react-dom && next build",
     "start": "next start",
     "lint": "next lint",
     "setup": "bash scripts/setup-db.sh",
-    "postinstall": "prisma generate || echo 'Prisma generate failed, but continuing'",
-    "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push",
-    "prisma:migrate": "prisma migrate dev"
-  },
-  "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+    "postinstall": "prisma generate || echo 'Prisma generate failed, but continuing'"
   },
   "dependencies": {
     "@headlessui/react": "^2.0.0",
@@ -23,8 +17,6 @@
     "@prisma/client": "^5.22.0",
     "@tailwindcss/forms": "^0.5.10",
     "@tailwindcss/typography": "^0.5.16",
-    "@types/react": "^18.2.47",
-    "@types/react-dom": "^18.2.18",
     "autoprefixer": "^10.4.16",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.0",
@@ -53,6 +45,8 @@
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.0",
     "@types/nodemailer": "^6.4.17",
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
     "eslint": "^8.54.0",
     "eslint-config-next": "14.0.3",
     "prisma": "^5.22.0",
