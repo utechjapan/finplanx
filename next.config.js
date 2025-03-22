@@ -46,14 +46,7 @@ const nextConfig = {
     ],
   },
   
-  // Increase timeout for API routes if needed
-  api: {
-    responseLimit: '8mb',
-    // Increase bodyParser limit if handling large uploads
-    bodyParser: {
-      sizeLimit: '2mb',
-    },
-  },
+  // Removed the invalid 'api' section that was causing the build error
   
   // Output to be static - this helps with certain deployment issues
   output: process.env.NEXT_OUTPUT || 'standalone',
