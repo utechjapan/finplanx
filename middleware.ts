@@ -1,4 +1,4 @@
-// middleware.ts
+// middleware.ts - Improved middleware with better routing rules
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -24,6 +24,7 @@ const publicPaths = [
   '/api/password-reset',
   '/api/verify-email',
   '/api/contact',
+  '/api/demo-login',
 ];
 
 // Static file extensions to ignore
@@ -57,7 +58,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Allow all API routes except those that require authentication
+  // Allow public API routes
   if (pathname.startsWith('/api/') && 
       !pathname.startsWith('/api/notifications') && 
       !pathname.startsWith('/api/user')) {
@@ -66,7 +67,10 @@ export async function middleware(request: NextRequest) {
   
   // Get authentication token
   try {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ 
+      req: request, 
+      secret: process.env.NEXTAUTH_SECRET 
+    });
     
     // If not authenticated, redirect to login
     if (!token) {
@@ -74,6 +78,11 @@ export async function middleware(request: NextRequest) {
       const url = new URL('/login', request.url);
       url.searchParams.set('callbackUrl', encodeURI(pathname));
       return NextResponse.redirect(url);
+    }
+    
+    // If trying to access homepage, redirect to dashboard for authenticated users
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
     
     // User is authenticated, allow access
@@ -89,7 +98,7 @@ export async function middleware(request: NextRequest) {
 // Configure paths that require middleware
 export const config = {
   matcher: [
-    // Protected routes
+    // Match all protected routes
     '/dashboard/:path*',
     '/finances/:path*',
     '/life-plan/:path*',
@@ -98,8 +107,9 @@ export const config = {
     '/reports/:path*',
     '/profile/:path*',
     '/settings/:path*',
-    // Protected API routes
     '/api/notifications/:path*',
-    '/api/user/:path*'
+    '/api/user/:path*',
+    // Also match root to handle redirection to dashboard for authenticated users
+    '/'
   ],
 };
