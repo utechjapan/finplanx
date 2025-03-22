@@ -19,33 +19,16 @@ const nextConfig = {
     NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE || "false",
   },
   
-  // Redirects
-  async redirects() {
-    return [
-      {
-        source: '/api/auth/signin',
-        destination: '/login',
-        permanent: true,
-      }
-    ];
-  },
-
-  // フォントローダーを無効化
-  optimizeFonts: false,
-
-  // Image domains
-  images: {
-    domains: [],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
-  },
-  
-  // Output to be static
+  // Set to serverless for Vercel compatibility
   output: 'standalone',
+  
+  // We want the URL to point to real functions, not rewrite
+  trailingSlash: false,
+  
+  // Disable experimental features that might cause issues
+  experimental: {
+    serverActions: false,
+  }
 };
 
 module.exports = nextConfig;
