@@ -1,4 +1,5 @@
 // lib/auth.ts - Improved authentication system with better error handling
+
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -13,6 +14,22 @@ import {
   sendEmailVerificationEmail
 } from "@/lib/email";
 import crypto from "crypto";
+
+// --- Extended Types for User ---
+
+// Augment the default AdapterUser and NextAuth User types with emailVerified
+import { User as NextAuthUser } from "next-auth";
+import { AdapterUser } from "next-auth/adapters";
+
+interface ExtendedUser extends AdapterUser {
+  emailVerified: Date | null;
+}
+
+interface ExtendedNextAuthUser extends NextAuthUser {
+  emailVerified?: Date | null;
+}
+
+// --- End Extended Types ---
 
 // Properly detect if we're in demo mode based on env var only
 export const isDevMode = () => {
@@ -70,7 +87,11 @@ export const authOptions: NextAuthOptions = {
         
         try {
           // Demo mode special case
-          if (isDevMode() && credentials.email === 'demo@example.com' && credentials.password === 'password123') {
+          if (
+            isDevMode() &&
+            credentials.email === 'demo@example.com' &&
+            credentials.password === 'password123'
+          ) {
             return {
               id: 'demo-user',
               name: 'デモユーザー',
@@ -197,7 +218,9 @@ export const authOptions: NextAuthOptions = {
           
           // In production, email verification is required
           if (process.env.NODE_ENV === 'production') {
-            return (user as { emailVerified: Date | null }).emailVerified != null;
+            // Use type assertion to handle the emailVerified property
+            const extendedUser = user as ExtendedUser | ExtendedNextAuthUser;
+            return extendedUser.emailVerified != null;
           }
           
           return true;
