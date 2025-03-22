@@ -1,5 +1,3 @@
-// middleware.ts - Fixed version with better error handling and routing rules
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
@@ -65,13 +63,6 @@ export async function middleware(request: NextRequest) {
 
   // In demo mode, allow all API routes
   if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && pathname.startsWith('/api/')) {
-    return NextResponse.next();
-  }
-  
-  // Allow specific public API routes
-  if (pathname.startsWith('/api/') && 
-      !pathname.startsWith('/api/notifications') && 
-      !pathname.startsWith('/api/user')) {
     return NextResponse.next();
   }
   

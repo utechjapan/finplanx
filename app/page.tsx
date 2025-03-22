@@ -1,7 +1,7 @@
 // app/page.tsx - Fixed for App Router compatibility
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -83,6 +83,14 @@ export default function Home() {
       callbackUrl: '/dashboard'
     });
   };
+  
+  // Add an effect to check if user is logged in and redirect
+  useEffect(() => {
+    // If in demo mode, we might want to auto-redirect
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+      console.log('Demo mode active on homepage');
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -206,125 +214,6 @@ export default function Home() {
                 </motion.div>
               ))}
             </motion.div>
-          </div>
-        </section>
-
-        {/* How to use section */}
-        <section className="py-20 bg-gray-50 dark:bg-gray-800">
-          <div className="container mx-auto px-4">
-            <motion.div 
-              className="text-center mb-16"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-3xl font-bold mb-4 dark:text-white">簡単3ステップで始める</h2>
-              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                FinPlanXはシンプルに設計されており、誰でも簡単に始められます
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <motion.div 
-                className="bg-white dark:bg-gray-700 rounded-lg p-6 shadow-lg text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-              >
-                <div className="h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-2xl font-bold text-white">1</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-3 dark:text-white">アカウント登録</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  無料でアカウントを作成し、基本的な財務情報を入力します。
-                </p>
-              </motion.div>
-
-              <motion.div 
-                className="bg-white dark:bg-gray-700 rounded-lg p-6 shadow-lg text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <div className="h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-2xl font-bold text-white">2</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-3 dark:text-white">目標設定</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  あなたの財務目標（貯蓄、投資、返済など）を設定します。
-                </p>
-              </motion.div>
-
-              <motion.div 
-                className="bg-white dark:bg-gray-700 rounded-lg p-6 shadow-lg text-center"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-              >
-                <div className="h-16 w-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-2xl font-bold text-white">3</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-3 dark:text-white">計画実行</h3>
-                <p className="text-gray-600 dark:text-gray-300">
-                  最適な財務計画を実行し、進捗をリアルタイムでトラッキング。
-                </p>
-              </motion.div>
-            </div>
-
-            <div className="mt-16 text-center">
-              <Link 
-                href="/register" 
-                className="px-8 py-3 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors inline-block"
-              >
-                無料で始める
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials section */}
-        <section className="py-20 bg-white dark:bg-gray-900">
-          <div className="container mx-auto px-4">
-            <motion.div 
-              className="text-center mb-16"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-3xl font-bold mb-4 dark:text-white">ユーザーの声</h2>
-              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                多くのユーザーがFinPlanXで財務目標を達成しています
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {testimonials.map((testimonial, index) => (
-                <motion.div 
-                  key={index}
-                  className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 shadow-md"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <div className="flex items-center mb-4">
-                    <div className="h-14 w-14 rounded-full overflow-hidden mr-4 bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                      <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{testimonial.name.charAt(0)}</span>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold dark:text-white">{testimonial.name}</h3>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm">{testimonial.position}</p>
-                    </div>
-                  </div>
-                  <p className="text-gray-700 dark:text-gray-300 italic">"{testimonial.quote}"</p>
-                </motion.div>
-              ))}
-            </div>
           </div>
         </section>
 
