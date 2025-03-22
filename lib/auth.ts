@@ -1,4 +1,4 @@
-// lib/auth.ts - Improved authentication system
+// lib/auth.ts - Improved authentication system with better error handling
 import { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -20,8 +20,43 @@ export const isDevMode = () => {
   return process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 };
 
+// Enhanced adapter with error handling
+const getPrismaAdapter = () => {
+  try {
+    return PrismaAdapter(prisma);
+  } catch (error) {
+    console.error("Failed to initialize Prisma adapter:", error);
+    // Return a minimal adapter that won't crash the app
+    // This is a fallback for when the database is unavailable
+    return {
+      createUser: async () => {
+        console.error("Database unavailable - createUser operation failed");
+        throw new Error("Database connection error");
+      },
+      getUser: async () => null,
+      getUserByEmail: async () => null,
+      getUserByAccount: async () => null,
+      updateUser: async () => {
+        throw new Error("Database connection error");
+      },
+      linkAccount: async () => {
+        throw new Error("Database connection error");
+      },
+      createSession: async () => {
+        throw new Error("Database connection error");
+      },
+      getSessionAndUser: async () => null,
+      updateSession: async () => {
+        throw new Error("Database connection error");
+      },
+      deleteSession: async () => {},
+    };
+  }
+};
+
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // Use adapter with error handling
+  adapter: isDevMode() ? undefined : getPrismaAdapter(),
   providers: [
     // Credentials provider
     CredentialsProvider({
@@ -44,15 +79,27 @@ export const authOptions: NextAuthOptions = {
             };
           }
           
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
-          });
+          // Try to find the user, with error handling
+          let user;
+          try {
+            user = await prisma.user.findUnique({
+              where: { email: credentials.email },
+            });
+          } catch (dbError) {
+            console.error("Database error during login:", dbError);
+            throw new Error("Database connection error");
+          }
           
           if (!user || !user.password) return null;
           
           // Password comparison
-          const passwordMatch = await compare(credentials.password, user.password);
-          if (!passwordMatch) return null;
+          try {
+            const passwordMatch = await compare(credentials.password, user.password);
+            if (!passwordMatch) return null;
+          } catch (bcryptError) {
+            console.error("Bcrypt comparison error:", bcryptError);
+            return null;
+          }
 
           // Only send login notification in production
           if (process.env.NODE_ENV === 'production' && !isDevMode()) {
@@ -102,44 +149,66 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user, account }) {
+      // Safely assign user properties to token
       if (user) {
-        token.id = user.id;
-        token.name = user.name;
-        token.email = user.email;
-        if (account) token.provider = account.provider;
+        try {
+          token.id = user.id || 'unknown-id';
+          token.name = user.name || null;
+          token.email = user.email || null;
+          if (account) token.provider = account.provider;
+        } catch (error) {
+          console.error("Error in JWT callback:", error);
+          // Ensure token has minimum required properties
+          token.id = token.id || 'error-id';
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.name = token.name as string;
-        session.user.email = token.email as string;
+      try {
+        if (token && session.user) {
+          session.user.id = token.id as string;
+          // Only assign if they exist
+          if (token.name) session.user.name = token.name as string;
+          if (token.email) session.user.email = token.email as string;
+        }
+      } catch (error) {
+        console.error("Error in session callback:", error);
+        // Ensure session has an ID at minimum
+        if (session.user && !session.user.id) {
+          session.user.id = 'error-session-id';
+        }
       }
       return session;
     },
     async signIn({ user, account, profile }) {
-      // OAuth sign-ins always allowed
-      if (account?.provider === 'google' || account?.provider === 'github') {
-        return true;
-      }
-      
-      // For credentials provider
-      if (account?.provider === 'credentials') {
-        // Demo mode always allowed
-        if (isDevMode()) {
+      try {
+        // OAuth sign-ins always allowed
+        if (account?.provider === 'google' || account?.provider === 'github') {
           return true;
         }
         
-        // In production, email verification is required
-        if (process.env.NODE_ENV === 'production') {
-          return user.emailVerified != null;
+        // For credentials provider
+        if (account?.provider === 'credentials') {
+          // Demo mode always allowed
+          if (isDevMode()) {
+            return true;
+          }
+          
+          // In production, email verification is required
+          if (process.env.NODE_ENV === 'production') {
+            return user.emailVerified != null;
+          }
+          
+          return true;
         }
         
         return true;
+      } catch (error) {
+        console.error("Error in signIn callback:", error);
+        // Default to allowing sign in if there's an error in the logic
+        return true;
       }
-      
-      return true;
     },
   },
 
@@ -153,26 +222,46 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === "development",
 };
 
-// User registration helper function
+// User registration helper function with better error handling
 export async function registerUser(name: string, email: string, password: string) {
   try {
     // Check for existing user
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    let existingUser;
+    try {
+      existingUser = await prisma.user.findUnique({ where: { email } });
+    } catch (dbError) {
+      console.error("Database error checking for existing user:", dbError);
+      return { success: false, error: "データベース接続エラーが発生しました。しばらくしてから再度お試しください。" };
+    }
+    
     if (existingUser) {
       return { success: false, error: "このメールアドレスは既に登録されています" };
     }
     
-    const hashedPassword = await hash(password, 12);
+    let hashedPassword;
+    try {
+      hashedPassword = await hash(password, 12);
+    } catch (hashError) {
+      console.error("Password hashing error:", hashError);
+      return { success: false, error: "パスワードのハッシュ化中にエラーが発生しました" };
+    }
+    
     const verificationToken = crypto.randomUUID();
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        verificationToken,
-      },
-    });
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          verificationToken,
+        },
+      });
+    } catch (createError) {
+      console.error("User creation error:", createError);
+      return { success: false, error: "ユーザー作成中にエラーが発生しました" };
+    }
 
     try {
       // Skip email verification in demo mode

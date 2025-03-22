@@ -1,6 +1,4 @@
-// File: lib/email.ts
-// Updated email system with better error handling and retry logic
-
+// lib/email.ts - Improved email system with better error handling and fallbacks
 import nodemailer from 'nodemailer';
 import { isDevMode } from './auth';
 import { setTimeout } from 'timers/promises';
@@ -8,15 +6,16 @@ import { setTimeout } from 'timers/promises';
 // Maximum number of email sending retries
 const MAX_RETRIES = 3;
 
-// Set up mail transporter with retry capability
+// Improved mail transporter with better error handling
 const getTransporter = () => {
+  // Always return a mock transporter in demo mode
   if (isDevMode()) {
     return {
       sendMail: async (mailOptions: any) => {
-        console.log('--------- DEVELOPMENT EMAIL ---------');
+        console.log('--------- DEVELOPMENT/DEMO EMAIL ---------');
         console.log('To:', mailOptions.to);
         console.log('Subject:', mailOptions.subject);
-        console.log('Text:', mailOptions.text);
+        console.log('Text:', mailOptions.text ? mailOptions.text.substring(0, 150) + '...' : 'No text content');
         console.log('HTML:', mailOptions.html ? 'HTML email content (truncated)' : 'No HTML');
         console.log('-------------------------------------');
         return { messageId: 'dev-mode-' + Date.now() };
@@ -24,16 +23,40 @@ const getTransporter = () => {
     };
   }
   
+  // Check if email configuration is complete
+  const missingEnvVars = [
+    'EMAIL_SERVER_HOST', 
+    'EMAIL_SERVER_PORT', 
+    'EMAIL_SERVER_USER', 
+    'EMAIL_SERVER_PASSWORD'
+  ].filter(envVar => !process.env[envVar]);
+  
+  if (missingEnvVars.length > 0) {
+    console.warn(`Email configuration incomplete. Missing: ${missingEnvVars.join(', ')}`);
+    // Return a mock transporter that logs instead of sending
+    return {
+      sendMail: async (mailOptions: any) => {
+        console.warn('Email would be sent but configuration is incomplete:');
+        console.warn(`To: ${mailOptions.to}, Subject: ${mailOptions.subject}`);
+        return { messageId: 'mock-incomplete-config-' + Date.now() };
+      }
+    };
+  }
+  
   // Real email transporter for production
   try {
     return nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST || 'smtp.sendgrid.net',
+      host: process.env.EMAIL_SERVER_HOST,
       port: parseInt(process.env.EMAIL_SERVER_PORT || '587'),
       secure: process.env.EMAIL_SERVER_SECURE === 'true',
       auth: {
         user: process.env.EMAIL_SERVER_USER || '',
         pass: process.env.EMAIL_SERVER_PASSWORD || '',
       },
+      // Add timeout settings to avoid hanging connections
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000, // 10 seconds
+      socketTimeout: 15000, // 15 seconds
     });
   } catch (error) {
     console.error('Failed to create email transporter:', error);
@@ -73,8 +96,10 @@ async function sendEmailWithRetry(mailOptions: any, retryCount = 0) {
 
 // Get site URL from environment or use default
 const getSiteUrl = () => {
-  return process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
-    ? `https://${process.env.VERCEL_URL}` 
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3000'
     : 'https://finplanx-app.com';
 };
 
@@ -84,6 +109,12 @@ const getSenderEmail = () => {
 };
 
 export async function sendWelcomeEmail(email: string, name: string) {
+  // Skip in demo mode
+  if (isDevMode()) {
+    console.log(`Demo mode: Skipping welcome email to ${email}`);
+    return { messageId: `demo-welcome-${Date.now()}` };
+  }
+
   const siteUrl = getSiteUrl();
   const loginUrl = `${siteUrl}/login`;
   
@@ -143,10 +174,21 @@ FinPlanXチーム
     `,
   };
   
-  return sendEmailWithRetry(mailOptions);
+  try {
+    return await sendEmailWithRetry(mailOptions);
+  } catch (error) {
+    console.error("Failed to send welcome email:", error);
+    return { messageId: `error-welcome-${Date.now()}` };
+  }
 }
 
 export async function sendPasswordResetEmail(email: string, name: string, token: string) {
+  // Skip in demo mode
+  if (isDevMode()) {
+    console.log(`Demo mode: Skipping password reset email to ${email} with token ${token}`);
+    return { messageId: `demo-reset-${Date.now()}` };
+  }
+
   const siteUrl = getSiteUrl();
   const resetUrl = `${siteUrl}/reset-password?token=${token}`;
   
@@ -212,10 +254,21 @@ FinPlanXチーム
     `,
   };
   
-  return sendEmailWithRetry(mailOptions);
+  try {
+    return await sendEmailWithRetry(mailOptions);
+  } catch (error) {
+    console.error("Failed to send password reset email:", error);
+    return { messageId: `error-reset-${Date.now()}` };
+  }
 }
 
 export async function sendLoginNotificationEmail(email: string, name: string) {
+  // Skip in demo mode
+  if (isDevMode()) {
+    console.log(`Demo mode: Skipping login notification email to ${email}`);
+    return { messageId: `demo-login-notification-${Date.now()}` };
+  }
+
   const siteUrl = getSiteUrl();
   const settingsUrl = `${siteUrl}/settings`;
   const loginTime = new Date().toLocaleString('ja-JP');
@@ -274,10 +327,21 @@ FinPlanXチーム
     `,
   };
   
-  return sendEmailWithRetry(mailOptions);
+  try {
+    return await sendEmailWithRetry(mailOptions);
+  } catch (error) {
+    console.error("Failed to send login notification email:", error);
+    return { messageId: `error-login-notification-${Date.now()}` };
+  }
 }
 
 export async function sendContactFormEmail(senderEmail: string, senderName: string, subject: string, message: string) {
+  // Skip in demo mode
+  if (isDevMode()) {
+    console.log(`Demo mode: Skipping contact form email from ${senderEmail}`);
+    return { messageId: `demo-contact-${Date.now()}` };
+  }
+
   // Support email is either from env or default
   const supportEmail = process.env.CONTACT_EMAIL || 'contact@finplanx-app.com';
   
@@ -319,7 +383,7 @@ ${message}
     `,
   };
 
-  // Send confirmation email to user
+  // Confirmation email to user
   const confirmationMailOptions = {
     from: `"FinPlanX" <${getSenderEmail()}>`,
     to: senderEmail,
@@ -372,12 +436,12 @@ FinPlanXチーム
     // Send to support team
     await sendEmailWithRetry(mailOptions);
     // Send confirmation to user
-    return sendEmailWithRetry(confirmationMailOptions);
+    return await sendEmailWithRetry(confirmationMailOptions);
   } catch (error) {
     console.error('Failed to send contact emails:', error);
     // Try to at least send the confirmation email
     try {
-      return sendEmailWithRetry(confirmationMailOptions);
+      return await sendEmailWithRetry(confirmationMailOptions);
     } catch (confirmError) {
       console.error('Failed to send confirmation email:', confirmError);
       throw error; // Re-throw the original error
@@ -386,6 +450,12 @@ FinPlanXチーム
 }
 
 export async function sendEmailVerificationEmail(email: string, name: string, token: string) {
+  // Skip in demo mode
+  if (isDevMode()) {
+    console.log(`Demo mode: Skipping email verification email to ${email} with token ${token}`);
+    return { messageId: `demo-verification-${Date.now()}` };
+  }
+
   const siteUrl = getSiteUrl();
   const verificationUrl = `${siteUrl}/verify-email?token=${token}`;
   
@@ -443,15 +513,39 @@ FinPlanXチーム
     `,
   };
   
-  return sendEmailWithRetry(mailOptions);
+  try {
+    return await sendEmailWithRetry(mailOptions);
+  } catch (error) {
+    console.error("Failed to send email verification email:", error);
+    return { messageId: `error-verification-${Date.now()}` };
+  }
 }
 
-// New - Send reminder email for expenses
+// New - Send reminder email for expenses with better error handling
 export async function sendExpenseReminderEmail(email: string, name: string, expenseName: string, amount: number, dueDate: Date) {
-  const formattedAmount = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(amount);
-  const formattedDate = new Intl.DateTimeFormat('ja-JP', { 
-    year: 'numeric', month: 'long', day: 'numeric' 
-  }).format(dueDate);
+  // Skip in demo mode
+  if (isDevMode()) {
+    console.log(`Demo mode: Skipping expense reminder email to ${email} for ${expenseName}`);
+    return { messageId: `demo-expense-reminder-${Date.now()}` };
+  }
+
+  // Format amount and date safely
+  let formattedAmount = '(金額不明)';
+  let formattedDate = '(日付不明)';
+  
+  try {
+    formattedAmount = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(amount);
+  } catch (error) {
+    console.error('Error formatting amount:', error);
+  }
+  
+  try {
+    formattedDate = new Intl.DateTimeFormat('ja-JP', { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    }).format(dueDate);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+  }
   
   const mailOptions = {
     from: `"FinPlanX" <${getSenderEmail()}>`,
@@ -504,5 +598,10 @@ FinPlanXチーム
     `,
   };
   
-  return sendEmailWithRetry(mailOptions);
+  try {
+    return await sendEmailWithRetry(mailOptions);
+  } catch (error) {
+    console.error("Failed to send expense reminder email:", error);
+    return { messageId: `error-expense-reminder-${Date.now()}` };
+  }
 }

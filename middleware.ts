@@ -1,4 +1,4 @@
-// middleware.ts - Fixed version with better routing rules
+// middleware.ts - Fixed version with better error handling and routing rules
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -25,6 +25,7 @@ const publicPaths = [
   '/api/verify-email',
   '/api/contact',
   '/api/demo-login',
+  '/api/health', // Added health check API
 ];
 
 // Static file extensions to ignore
@@ -61,8 +62,13 @@ export async function middleware(request: NextRequest) {
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
+
+  // In demo mode, allow all API routes
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
   
-  // Allow public API routes
+  // Allow specific public API routes
   if (pathname.startsWith('/api/') && 
       !pathname.startsWith('/api/notifications') && 
       !pathname.startsWith('/api/user')) {
@@ -93,8 +99,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   } catch (error) {
     console.error('[Middleware] Error checking authentication:', error);
+    
+    // If we're in demo mode, don't redirect on error to keep the demo working
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+      console.log('[Middleware] Demo mode, allowing access despite auth error');
+      return NextResponse.next();
+    }
+    
     // On error, redirect to login as a fallback
     const url = new URL('/login', request.url);
+    url.searchParams.set('error', 'AuthError');
     return NextResponse.redirect(url);
   }
 }
