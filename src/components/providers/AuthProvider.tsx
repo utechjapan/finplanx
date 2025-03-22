@@ -1,4 +1,4 @@
-// src/components/providers/AuthProvider.tsx
+// src/components/providers/AuthProvider.tsx - Fixed
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -44,9 +44,13 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
         return { success: false, error: 'Invalid email or password' };
       }
       
-      // Redirect on success
-      window.location.href = callbackUrl;
-      return { success: true };
+      // Handle success
+      if (result?.ok && result.url) {
+        window.location.href = callbackUrl;
+        return { success: true };
+      }
+      
+      return { success: !!result?.ok };
     } catch (err) {
       const errorMessage = 'An error occurred during login';
       setError(errorMessage);
@@ -61,6 +65,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
     try {
       setLoading(true);
       await signOut({ callbackUrl });
+      return;
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
@@ -89,7 +94,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
         return { success: false, error: data.error || 'Registration failed' };
       }
       
-      return { success: true };
+      return { success: true, message: data.message };
     } catch (err) {
       const errorMessage = 'An error occurred during registration';
       setError(errorMessage);
@@ -120,7 +125,7 @@ export function AuthProviderWrapper({ children }: { children: React.ReactNode })
         return { success: false, error: data.error || 'Password reset failed' };
       }
       
-      return { success: true };
+      return { success: true, message: data.message };
     } catch (err) {
       const errorMessage = 'An error occurred during password reset';
       setError(errorMessage);

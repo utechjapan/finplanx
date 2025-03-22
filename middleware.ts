@@ -1,4 +1,4 @@
-// middleware.ts - Improved middleware with better routing rules
+// middleware.ts - Fixed version with better routing rules
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -35,11 +35,15 @@ const staticFileExtensions = [
 
 // Check if a path is for a static file
 const isStaticFile = (path: string): boolean => {
-  return staticFileExtensions.some(ext => path.endsWith(ext));
+  return staticFileExtensions.some(ext => path.endsWith(ext)) || 
+         path.startsWith('/_next/') || 
+         path.includes('/public/');
 };
 
 // Check if a path is in the public paths list or starts with any of them
 const isPublicPath = (path: string): boolean => {
+  if (path === '/') return true;
+  
   return publicPaths.some(publicPath => 
     path === publicPath || path.startsWith(`${publicPath}/`)
   );
@@ -98,18 +102,12 @@ export async function middleware(request: NextRequest) {
 // Configure paths that require middleware
 export const config = {
   matcher: [
-    // Match all protected routes
-    '/dashboard/:path*',
-    '/finances/:path*',
-    '/life-plan/:path*',
-    '/debt-repayment/:path*',
-    '/investments/:path*',
-    '/reports/:path*',
-    '/profile/:path*',
-    '/settings/:path*',
-    '/api/notifications/:path*',
-    '/api/user/:path*',
-    // Also match root to handle redirection to dashboard for authenticated users
-    '/'
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };

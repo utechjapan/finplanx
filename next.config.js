@@ -3,14 +3,14 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
-  // For production, these should be set to false and errors should be fixed
-  // Setting to true for now to ensure successful builds
+  // For development, these should be false to catch errors
+  // For production deployment, can set to true if needed
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: process.env.NODE_ENV === 'production',
   },
   
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: process.env.NODE_ENV === 'production',
   },
   
   // Environment variables
@@ -30,7 +30,7 @@ const nextConfig = {
         destination: '/login',
         permanent: true,
       },
-      // Redirect the root path to dashboard for authenticated users (handled in middleware)
+      // Root path redirects to dashboard for authenticated users (handled in middleware)
       // Homepage for non-authenticated users is still accessible
     ];
   },
@@ -38,6 +38,12 @@ const nextConfig = {
   // Image domains - add any external domains you need to load images from
   images: {
     domains: [],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
   
   // Increase timeout for API routes if needed
@@ -48,6 +54,9 @@ const nextConfig = {
       sizeLimit: '2mb',
     },
   },
+  
+  // Output to be static - this helps with certain deployment issues
+  output: process.env.NEXT_OUTPUT || 'standalone',
 };
 
 module.exports = nextConfig;

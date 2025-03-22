@@ -1,4 +1,4 @@
-// src/components/providers/NotificationProvider.tsx
+// src/components/providers/NotificationProvider.tsx - Fixed
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -20,7 +20,9 @@ interface NotificationContextType {
   unreadCount: number;
   fetchNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
+  markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
   createNotification: (notification: Omit<Notification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
 
@@ -43,6 +45,17 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     
     try {
       const response = await fetch('/api/notifications');
+      
+      // Handle non-OK responses
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('User not authenticated for notifications');
+          return;
+        }
+        
+        throw new Error(`Error fetching notifications: ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data.notifications) {
@@ -58,13 +71,47 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
+      
+      // If in demo mode, use mock data
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+        const mockNotifications: Notification[] = [
+          {
+            id: 'demo-1',
+            title: 'FinPlanXへようこそ',
+            message: 'デモモードでFinPlanXをお試しいただきありがとうございます。',
+            type: 'welcome',
+            isRead: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: 'demo-2',
+            title: '家賃の支払い期限',
+            message: '25日までに家賃の支払いを忘れないでください',
+            type: 'expense_reminder',
+            targetDate: new Date(new Date().setDate(new Date().getDate() + 5)),
+            isRead: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ];
+        setNotifications(mockNotifications);
+      }
     }
   };
   
   const markAsRead = async (id: string) => {
     try {
-      const response = await fetch(`/api/notifications/${id}`, {
-        method: 'PATCH'
+      // Demo mode check
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+        setNotifications(notifications.map(notification => 
+          notification.id === id ? { ...notification, isRead: true } : notification
+        ));
+        return;
+      }
+      
+      const response = await fetch(`/api/notifications/${id}/read`, {
+        method: 'PUT'
       });
       
       if (response.ok) {
@@ -77,8 +124,34 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
   
+  const markAllAsRead = async () => {
+    try {
+      // Demo mode check
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+        setNotifications(notifications.map(notification => ({ ...notification, isRead: true })));
+        return;
+      }
+      
+      const response = await fetch('/api/notifications/read-all', {
+        method: 'PUT'
+      });
+      
+      if (response.ok) {
+        setNotifications(notifications.map(notification => ({ ...notification, isRead: true })));
+      }
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+  
   const deleteNotification = async (id: string) => {
     try {
+      // Demo mode check
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+        setNotifications(notifications.filter(notification => notification.id !== id));
+        return;
+      }
+      
       const response = await fetch(`/api/notifications/${id}`, {
         method: 'DELETE'
       });
@@ -91,8 +164,42 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
   
+  const clearAllNotifications = async () => {
+    try {
+      // Demo mode check
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+        setNotifications([]);
+        return;
+      }
+      
+      const response = await fetch('/api/notifications', {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
+    }
+  };
+  
   const createNotification = async (notification: Omit<Notification, 'id' | 'isRead' | 'createdAt' | 'updatedAt'>) => {
     try {
+      // Demo mode check
+      if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+        const newNotification: Notification = {
+          id: `demo-${Date.now()}`,
+          ...notification,
+          isRead: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        setNotifications([newNotification, ...notifications]);
+        return;
+      }
+      
       const response = await fetch('/api/notifications', {
         method: 'POST',
         headers: {
@@ -134,7 +241,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       unreadCount,
       fetchNotifications,
       markAsRead,
+      markAllAsRead,
       deleteNotification,
+      clearAllNotifications,
       createNotification
     }}>
       {children}
