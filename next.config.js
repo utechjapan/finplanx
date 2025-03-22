@@ -3,22 +3,19 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
-  // For development, these should be false to catch errors
-  // For production deployment, can set to true if needed
+  // For production, set to true to avoid build errors
   typescript: {
-    ignoreBuildErrors: true, // TypeScriptエラーを無視
+    ignoreBuildErrors: true,
   },
   
   eslint: {
-    ignoreDuringBuilds: true, // ESLintエラーを無視
+    ignoreDuringBuilds: true,
   },
   
   // Environment variables
   env: {
-    // Use environment variables first, with fallbacks for development
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || 
                  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
-    // Demo mode should be explicitly enabled, default to "false" for production safety
     NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE || "false",
   },
   
@@ -36,7 +33,7 @@ const nextConfig = {
   // フォントローダーを無効化
   optimizeFonts: false,
 
-  // Image domains - add any external domains you need to load images from
+  // Image domains
   images: {
     domains: [],
     remotePatterns: [
@@ -47,7 +44,7 @@ const nextConfig = {
     ],
   },
   
-  // Output to be static - this helps with certain deployment issues
+  // Output to be static
   output: 'standalone',
 };
 
