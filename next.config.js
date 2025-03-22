@@ -46,10 +46,16 @@ const nextConfig = {
     ],
   },
   
-  // Removed the invalid 'api' section that was causing the build error
-  
   // Output to be static - this helps with certain deployment issues
   output: process.env.NEXT_OUTPUT || 'standalone',
+  
+  // Experimental features
+  experimental: {
+    // Serverless mode helps with deployment stability
+    serverComponents: true,
+    // Improved client-side routing
+    appDir: true,
+  },
 };
 
 module.exports = nextConfig;

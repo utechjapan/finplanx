@@ -1,7 +1,7 @@
 // app/verify-email-success/page.tsx
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -9,7 +9,7 @@ import { Check } from 'lucide-react';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { Button } from '@/src/components/ui/Button';
 
-export default function VerifyEmailSuccessPage() {
+function VerifyEmailSuccessContent() {
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
 
@@ -54,5 +54,13 @@ export default function VerifyEmailSuccessPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyEmailSuccessContent />
+    </Suspense>
   );
 }

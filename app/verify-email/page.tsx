@@ -1,7 +1,6 @@
-// app/verify-email/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -9,7 +8,7 @@ import { Check, AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { Button } from '@/src/components/ui/Button';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -137,5 +136,13 @@ export default function VerifyEmailPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

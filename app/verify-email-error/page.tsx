@@ -1,7 +1,6 @@
-// app/verify-email-error/page.tsx
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -9,7 +8,7 @@ import { AlertTriangle } from 'lucide-react';
 import { ThemeToggle } from '@/src/components/ui/ThemeToggle';
 import { Button } from '@/src/components/ui/Button';
 
-export default function VerifyEmailErrorPage() {
+function VerifyEmailErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
@@ -59,5 +58,13 @@ export default function VerifyEmailErrorPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailErrorPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyEmailErrorContent />
+    </Suspense>
   );
 }
