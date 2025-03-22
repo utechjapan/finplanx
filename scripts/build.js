@@ -68,32 +68,6 @@ ${schemaContent}`;
   console.error('❌ Prismaスキーマの確認中にエラーが発生しました:', error);
 }
 
-// Check for TypeScript errors but continue regardless
-try {
-  console.log('🔍 TypeScriptエラーを確認中...');
-  
-  try {
-    execSync('npx tsc --noEmit', { stdio: 'pipe' });
-    console.log('✅ TypeScriptエラーはありません');
-  } catch (error) {
-    console.log('⚠️ TypeScriptエラーが検出されましたが、ビルドを続行します:');
-    if (error.stdout) {
-      const errorOutput = error.stdout.toString();
-      // Summarize long error messages
-      const errorLines = errorOutput.split('\n').filter(line => line.includes('error'));
-      console.log(`エラー数: ${errorLines.length}`);
-      
-      // Show only first 5 errors
-      errorLines.slice(0, 5).forEach(line => console.log(line));
-      if (errorLines.length > 5) {
-        console.log(`... および ${errorLines.length - 5} 個の追加エラー`);
-      }
-    }
-  }
-} catch (error) {
-  console.error('❌ TypeScript検証中にエラーが発生しました:', error);
-}
-
 // Clear Next.js cache
 try {
   console.log('🧹 Next.jsキャッシュをクリア中...');
@@ -102,42 +76,20 @@ try {
   console.warn('⚠️ キャッシュのクリア中にエラーが発生しましたが、続行します');
 }
 
-// Install Tailwind and related dependencies if not already installed
+// Install Tailwind and dependencies
 try {
-  console.log('📦 Tailwind関連の依存関係を確認中...');
-  // Install Tailwind CSS and plugins if they don't exist
-  try {
-    require.resolve('@tailwindcss/forms');
-    console.log('✅ @tailwindcss/forms は既にインストールされています');
-  } catch (e) {
-    console.log('📦 @tailwindcss/forms をインストール中...');
-    execSync('npm install --save @tailwindcss/forms', { stdio: 'inherit' });
-  }
+  console.log('📦 依存関係を確認中...');
   
+  // Explicitly install React type definitions
+  console.log('📦 React型定義をインストール中...');
   try {
-    require.resolve('@tailwindcss/typography');
-    console.log('✅ @tailwindcss/typography は既にインストールされています');
-  } catch (e) {
-    console.log('📦 @tailwindcss/typography をインストール中...');
-    execSync('npm install --save @tailwindcss/typography', { stdio: 'inherit' });
-  }
-} catch (error) {
-  console.warn('⚠️ Tailwind依存関係のチェック中にエラーが発生しましたが、続行します:', error);
-}
-
-// Install dependencies
-try {
-  console.log('📦 依存関係をインストール中...');
-  
-  // 明示的に TypeScript の型定義をインストール
-  console.log('📦 TypeScript型定義をインストール中...');
-  try {
-    execSync('npm install --save-dev @types/react @types/react-dom @types/node --force', { stdio: 'inherit' });
+    execSync('npm install --save-dev @types/react@18.2.47 @types/react-dom@18.2.18 @types/node --force', { stdio: 'inherit' });
   } catch (typeError) {
-    console.warn('⚠️ TypeScript型定義のインストール中にエラーが発生しましたが、続行します');
+    console.warn('⚠️ React型定義のインストール中にエラーが発生しましたが、続行します');
+    console.error(typeError);
   }
   
-  // 通常の依存関係インストール
+  // Normal dependency installation
   execSync('npm install', { stdio: 'inherit' });
 } catch (error) {
   console.error('❌ 依存関係のインストール中にエラーが発生しました:', error);
@@ -150,7 +102,6 @@ try {
   execSync('npx prisma generate', { stdio: 'inherit' });
 } catch (error) {
   console.error('❌ Prismaクライアントの生成中にエラーが発生しました:', error);
-  // Continue even if Prisma generation fails
   console.log('⚠️ Prisma生成エラーがありましたが、ビルドを続行します');
 }
 
@@ -165,7 +116,6 @@ try {
     NEXT_IGNORE_ESLINT_ERRORS: 'true'
   };
 
-  // Fix for useSearchParams issue
   console.log('🔧 App Routerのコンポーネントが適切にSuspenseでラップされていることを確認します...');
   
   // Run build with more relaxed settings

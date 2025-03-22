@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install --save-dev @types/react @types/react-dom @types/node --force && npm run build",
+  "buildCommand": "npm install --save @types/react@18.2.47 @types/react-dom@18.2.18 @types/node --force && npm run build",
   "installCommand": "npm install --force && npx prisma generate",
   "framework": null,
   "outputDirectory": ".next",
