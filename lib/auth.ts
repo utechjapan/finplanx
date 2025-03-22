@@ -197,7 +197,7 @@ export const authOptions: NextAuthOptions = {
           
           // In production, email verification is required
           if (process.env.NODE_ENV === 'production') {
-            return user.emailVerified != null;
+            return (user as { emailVerified: Date | null }).emailVerified != null;
           }
           
           return true;

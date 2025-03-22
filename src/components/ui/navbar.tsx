@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useTheme } from 'next-themes';
-import { useNotifications, Notification } from '../../providers/NotificationProvider';
+import { useNotifications, Notification } from '@/src/components/providers/NotificationProvider';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 
