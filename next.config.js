@@ -29,9 +29,7 @@ const nextConfig = {
         source: '/api/auth/signin',
         destination: '/login',
         permanent: true,
-      },
-      // Root path redirects to dashboard for authenticated users (handled in middleware)
-      // Homepage for non-authenticated users is still accessible
+      }
     ];
   },
 
@@ -49,12 +47,9 @@ const nextConfig = {
   // Output to be static - this helps with certain deployment issues
   output: process.env.NEXT_OUTPUT || 'standalone',
   
-  // Experimental features
+  // Experimental features - 修正部分：不正なオプションを削除し、最新の形式に置き換え
   experimental: {
-    // Serverless mode helps with deployment stability
-    serverComponents: true,
-    // Improved client-side routing
-    appDir: true,
+    // ここでは最低限必要なものだけを残す
   },
 };
 
